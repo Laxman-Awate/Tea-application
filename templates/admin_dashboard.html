@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Enable sound -->
+<button onclick="enableSound()" class="mb-4 bg-blue-600 text-white px-4 py-2 rounded">
+🔔 Enable Notification Sound
+</button>
+
+<audio id="orderSound" src="{{ url_for('static', filename='sounds/new_order.mp3') }}"></audio>
+
+<!-- New order toast -->
+<div id="newOrderAlert"
+     class="hidden fixed top-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+🔔 New Order Received!
+</div>
+
+<div class="min-h-screen bg-gray-50">
+
+<header class="bg-amber-700 text-white p-6 flex justify-between">
+    <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+    <a href="{{ url_for('admin_logout') }}"
+       class="bg-white text-amber-700 px-4 py-2 rounded">
+        Logout
+    </a>
+</header>
+
+<div class="max-w-7xl mx-auto p-6">
+
+<!-- ================= STATS ================= -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-4 rounded shadow">
+        <p class="text-gray-500">Total Orders</p>
+        <h2 id="totalOrders" class="text-2xl font-bold">0</h2>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow">
+        <p class="text-gray-500">Today's Revenue</p>
+        <h2 id="todayRevenue" class="text-2xl font-bold text-green-600">₹0.00</h2>
+    </div>
+
+    <div class="bg-white p-4 rounded shadow">
+        <p class="text-gray-500">Most Sold Item</p>
+        <h2 id="popularItem" class="text-xl font-bold text-amber-700">-</h2>
+    </div>
+</div>
+
+<!-- ================= ORDERS ================= -->
+<div class="bg-white rounded shadow mb-10 overflow-x-auto">
+<table class="min-w-full">
+<thead class="bg-gray-100">
+<tr>
+    <th class="p-3 text-left">Customer</th>
+    <th class="p-3 text-left">Items</th>
+    <th class="p-3 text-center">Total</th>
+    <th class="p-3 text-center">Payment</th>
+    <th class="p-3 text-center">Status</th>
+</tr>
+</thead>
+<tbody id="ordersBody"></tbody>
+</table>
+</div>
+
+<!-- ================= DAILY SALES ================= -->
+<div class="bg-white rounded shadow p-6">
+<h2 class="text-xl font-semibold mb-4">Daily Sales Report</h2>
+<div id="dailySales"></div>
+</div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let lastOrderCount = 0;
+let soundEnabled = false;
+
+function enableSound() {
+    document.getElementById('orderSound').play()
+        .then(() => soundEnabled = true);
+}
+
+async function pollOrders() {
+    const res = await fetch('/admin/orders/live');
+    const orders = await res.json();
+
+    if (lastOrderCount && orders.length > lastOrderCount && soundEnabled) {
+        document.getElementById('orderSound').play();
+        const alert = document.getElementById('newOrderAlert');
+        alert.classList.remove('hidden');
+        setTimeout(() => alert.classList.add('hidden'), 3000);
+    }
+
+    lastOrderCount = orders.length;
+
+    updateStats(orders);
+    updateOrdersTable(orders);
+    updateDailySales(orders);
+}
+
+function updateStats(orders) {
+    document.getElementById('totalOrders').textContent = orders.length;
+
+    const today = new Date().toISOString().split('T')[0];
+    let revenue = 0;
+    const itemCount = {};
+
+    orders.forEach(o => {
+        if (!o.createdAt) return;
+
+        const date = new Date(o.createdAt).toISOString().split('T')[0];
+
+        if (date === today && o.paymentStatus === 'PAID') {
+            revenue += o.totalAmount || 0;
+        }
+
+        o.items.forEach(i => {
+            itemCount[i.name] = (itemCount[i.name] || 0) + i.quantity;
+        });
+    });
+
+    document.getElementById('todayRevenue').textContent = `₹${revenue.toFixed(2)}`;
+
+    const popular = Object.entries(itemCount).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('popularItem').textContent =
+        popular ? `${popular[0]} (${popular[1]})` : '-';
+}
+
+function updateOrdersTable(orders) {
+    const tbody = document.getElementById('ordersBody');
+    tbody.innerHTML = '';
+
+    orders.forEach(o => {
+        const items = o.items.map(i => `${i.name} × ${i.quantity}`).join(', ');
+
+        const paymentBadge = o.paymentStatus === 'PAID'
+            ? `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">PAID</span>`
+            : `<span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">PENDING</span>`;
+
+        const statusBadge = o.orderStatus === 'OPEN'
+            ? `<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">OPEN</span>`
+            : `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">DONE</span>`;
+
+        tbody.innerHTML += `
+        <tr class="border-t">
+            <td class="px-4 py-3 font-medium">${o.customerName || 'Guest'}</td>
+            <td class="px-4 py-3 text-sm">${items}</td>
+            <td class="px-4 py-3 text-center font-semibold">₹${(o.totalAmount||0).toFixed(2)}</td>
+            <td class="px-4 py-3 text-center">${paymentBadge}</td>
+            <td class="px-4 py-3 text-center">${statusBadge}</td>
+        </tr>`;
+    });
+}
+
+function updateDailySales(orders) {
+    const daily = {};
+
+    orders.forEach(o => {
+        if (!o.createdAt) return;
+        const date = new Date(o.createdAt).toDateString();
+
+        if (!daily[date]) {
+            daily[date] = { total: 0, items: {} };
+        }
+
+        daily[date].total += o.totalAmount || 0;
+
+        o.items.forEach(i => {
+            daily[date].items[i.name] =
+                (daily[date].items[i.name] || 0) + i.quantity;
+        });
+    });
+
+    const container = document.getElementById('dailySales');
+    container.innerHTML = Object.entries(daily).map(([date,data]) => `
+        <div class="mb-6 border rounded-lg">
+            <div class="flex justify-between px-4 py-2 bg-amber-100 font-semibold">
+                <span>${date}</span>
+                <span>₹${data.total.toFixed(2)}</span>
+            </div>
+            <div class="p-4 space-y-2">
+                ${Object.entries(data.items).map(([name,qty]) => `
+                    <div class="flex justify-between bg-gray-50 px-3 py-2 rounded">
+                        <span>${name}</span>
+                        <span>× ${qty}</span>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    pollOrders();
+    setInterval(pollOrders, 3000);
+});
+</script>
+
+<script type="module" src="{{ url_for('static', filename='js/fcm.js') }}"></script>
+{% endblock %}

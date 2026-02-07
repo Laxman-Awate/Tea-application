@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Pay with UPI{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-10 px-4">
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Complete Payment</h1>
+        <p class="text-gray-500 mt-1">
+            Order #{{ order.order_code }}
+        </p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+
+        <!-- QR -->
+        <div class="text-center mb-6">
+            <p class="text-gray-600 mb-3">
+                Scan the QR code or use UPI ID to pay
+            </p>
+
+            <div class="bg-gray-100 inline-block p-4 rounded-xl">
+                <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ upi_link }}"
+                    alt="UPI QR Code"
+                    class="mx-auto"
+                >
+            </div>
+        </div>
+
+        <!-- UPI ID -->
+        <div class="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3 mb-4">
+            <span class="font-mono text-gray-700">{{ upi_id }}</span>
+            <button onclick="copyUPI()" class="text-amber-600 text-sm font-medium">
+                Copy
+            </button>
+        </div>
+
+        <!-- Amount -->
+        <div class="text-center mb-6">
+            <p class="text-4xl font-bold text-amber-600">
+                ₹{{ order.total }}
+            </p>
+            <p class="text-gray-500 mt-1">for your order</p>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-amber-50 rounded-lg p-4 text-sm text-gray-700 mb-6">
+            <p class="font-semibold mb-2">How to pay:</p>
+            <ol class="list-decimal list-inside space-y-1">
+                <li>Open any UPI app (GPay, PhonePe, Paytm)</li>
+                <li>Scan QR or enter the UPI ID</li>
+                <li>Pay ₹{{ order.total }}</li>
+                <li>Click “I have paid” below</li>
+            </ol>
+        </div>
+
+        <!-- Open UPI -->
+        <a href="{{ upi_link }}"
+           class="block text-center border border-gray-300 rounded-lg py-3 mb-4 font-medium hover:bg-gray-50">
+            Open UPI App
+        </a>
+
+        <!-- Confirm -->
+        <form action="{{ url_for('confirm_payment') }}" method="POST">
+            <input type="hidden" name="order_id" value="{{ order.order_id }}">
+            <button type="submit"
+                    class="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition">
+                ✅ I have paid ₹{{ order.total }}
+            </button>
+        </form>
+
+    </div>
+
+    <div class="text-center mt-6">
+        <a href="{{ url_for('index') }}"
+           class="text-sm text-gray-500 hover:text-amber-600">
+            ← Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyUPI() {
+    navigator.clipboard.writeText("{{ upi_id }}");
+    alert("UPI ID copied");
+}
+</script>
+{% endblock %}

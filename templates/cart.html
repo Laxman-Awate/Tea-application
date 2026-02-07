@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Your Cart{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+    <h1 class="text-3xl font-bold mb-6">Your Cart</h1>
+
+    {% if not cart_items %}
+        <p>Your cart is empty.</p>
+        <a href="{{ url_for('index') }}" class="text-amber-600 underline">
+            Go back
+        </a>
+    {% else %}
+
+    <div class="bg-white p-6 rounded shadow">
+        {% for item in cart_items %}
+            <div class="flex justify-between border-b py-2">
+                <span>{{ item.name }} × {{ item.quantity }}</span>
+                <span>₹{{ item.total }}</span>
+            </div>
+        {% endfor %}
+
+        <div class="text-right font-bold mt-4">
+            Total: ₹{{ total }}
+        </div>
+
+        <!-- 🔥 THIS IS THE MOST IMPORTANT PART -->
+        <form method="POST" action="{{ url_for('create_order_route') }}" class="mt-6">
+            <button type="submit"
+                class="w-full bg-amber-600 text-white py-3 rounded">
+                Send Order to Counter
+            </button>
+        </form>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
