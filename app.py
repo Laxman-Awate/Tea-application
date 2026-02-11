@@ -42,9 +42,57 @@ def inject_globals():
 
 # ------------------ FALLBACK MENU ------------------
 SAMPLE_MENU = [
-    {"id": "1", "name": "Masala Chai", "price": 20, "category": "Tea"},
-    {"id": "2", "name": "Green Tea", "price": 25, "category": "Tea"},
-    {"id": "3", "name": "Coffee", "price": 30, "category": "Coffee"},
+    # Snacks
+    {"id": "1", "name": "Biscuit", "price": 5, "category": "Snacks"},
+    {"id": "2", "name": "Cake", "price": 5, "category": "Snacks"},
+
+    # Beverages
+    {"id": "3", "name": "Masala Tea", "price": 10, "category": "Beverages"},
+    {"id": "4", "name": "Jaggery Tea", "price": 20, "category": "Beverages"},
+    {"id": "5", "name": "Lemon Tea", "price": 15, "category": "Beverages"},
+    {"id": "6", "name": "Black Tea", "price": 15, "category": "Beverages"},
+    {"id": "7", "name": "Green Tea", "price": 15, "category": "Beverages"},
+    {"id": "8", "name": "Lemon Ice Tea", "price": 40, "category": "Beverages"},
+    {"id": "9", "name": "Sugarless Tea", "price": 15, "category": "Beverages"},
+    {"id": "10", "name": "Hot Coffee", "price": 20, "category": "Beverages"},
+    {"id": "11", "name": "Cold Coffee", "price": 50, "category": "Beverages"},
+    {"id": "12", "name": "Boost", "price": 20, "category": "Beverages"},
+    {"id": "13", "name": "Bournvita", "price": 20, "category": "Beverages"},
+    {"id": "14", "name": "Milk", "price": 15, "category": "Beverages"},
+    {"id": "15", "name": "Badam Milk", "price": 20, "category": "Beverages"},
+
+    # Sandwiches
+    {"id": "16", "name": "Veg Sandwich", "price": 40, "category": "Sandwiches"},
+    {"id": "17", "name": "Veg Grilled Sandwich", "price": 60, "category": "Sandwiches"},
+    {"id": "18", "name": "Cheese Grilled Sandwich", "price": 70, "category": "Sandwiches"},
+    {"id": "19", "name": "Paneer Cheese Grilled Sandwich", "price": 80, "category": "Sandwiches"},
+    {"id": "20", "name": "Cheese Corn Grilled Sandwich", "price": 80, "category": "Sandwiches"},
+
+    # Momos
+    {"id": "21", "name": "Kurkure Momos", "price": 100, "category": "Momos"},
+    {"id": "22", "name": "Peri Peri Momos", "price": 80, "category": "Momos"},
+    {"id": "23", "name": "Paneer Momos", "price": 80, "category": "Momos"},
+    {"id": "24", "name": "Schezwan Momos", "price": 80, "category": "Momos"},
+    {"id": "25", "name": "Mix Veggie Momos", "price": 70, "category": "Momos"},
+    {"id": "26", "name": "Corn Momos", "price": 70, "category": "Momos"},
+
+    # Maggi
+    {"id": "27", "name": "Plain Maggi", "price": 35, "category": "Maggi"},
+    {"id": "28", "name": "Veg Maggi", "price": 45, "category": "Maggi"},
+    {"id": "29", "name": "Egg Maggi", "price": 55, "category": "Maggi"},
+    {"id": "30", "name": "Cheese Maggi", "price": 55, "category": "Maggi"},
+
+    # Fries
+    {"id": "31", "name": "French Fries", "price": 60, "category": "Fries"},
+    {"id": "32", "name": "Peri Peri Fries", "price": 70, "category": "Fries"},
+    {"id": "33", "name": "Cheese French Fries", "price": 80, "category": "Fries"},
+
+    # Frankie
+    {"id": "34", "name": "Paneer Cheese Frankie", "price": 80, "category": "Frankie"},
+    {"id": "35", "name": "Cheese Frankie", "price": 70, "category": "Frankie"},
+    {"id": "36", "name": "Veg Frankie", "price": 60, "category": "Frankie"},
+    {"id": "37", "name": "Corn Frankie", "price": 70, "category": "Frankie"},
+    {"id": "38", "name": "Aloo Frankie", "price": 60, "category": "Frankie"}
 ]
 
 # ------------------ HOME ------------------

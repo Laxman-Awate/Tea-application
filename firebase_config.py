@@ -43,7 +43,6 @@ def get_menu():
 
 # ---------------- ORDERS ----------------
 def save_order(order_data):
-
     try:
         db = get_db()
 
