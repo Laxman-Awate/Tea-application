@@ -57,11 +57,31 @@
             </ol>
         </div>
 
-        <!-- Open UPI -->
-        <a href="{{ upi_link }}"
-           class="block text-center border border-gray-300 rounded-lg py-3 mb-4 font-medium hover:bg-gray-50">
-            Open UPI App
-        </a>
+        <!-- Open UPI - Different for Mobile/Desktop -->
+        <div id="upiOptions">
+            <!-- Mobile: Show UPI Apps -->
+            <div id="mobileUPI" class="hidden">
+                <button onclick="showUPIModal()" 
+                        class="block w-full text-center border border-gray-300 rounded-lg py-3 mb-4 font-medium hover:bg-gray-50 transition">
+                    📱 Open UPI App
+                </button>
+            </div>
+            
+            <!-- Desktop: Show QR and Instructions -->
+            <div id="desktopUPI">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center mb-2">
+                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h4a1 1 0 001-1V9a1 1 0 00-1-1H9z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-blue-800">Desktop/Laptop Detected</span>
+                    </div>
+                    <p class="text-sm text-blue-700">
+                        UPI apps work only on mobile devices. Please use your phone to scan the QR code above.
+                    </p>
+                </div>
+            </div>
+        </div>
 
         <!-- Confirm -->
         <form action="{{ url_for('confirm_payment') }}" method="POST">
@@ -72,6 +92,64 @@
             </button>
         </form>
 
+    </div>
+
+    <!-- UPI Apps Modal -->
+    <div id="upiModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold">Choose UPI App</h3>
+                <button onclick="closeUPIModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <button onclick="openUPIApp('gpay')" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 bg-green-500 rounded-full mb-2 flex items-center justify-center">
+                        <span class="text-white font-bold">G</span>
+                    </div>
+                    <span class="text-sm">Google Pay</span>
+                </button>
+                
+                <button onclick="openUPIApp('phonepe')" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 bg-purple-600 rounded-full mb-2 flex items-center justify-center">
+                        <span class="text-white font-bold">P</span>
+                    </div>
+                    <span class="text-sm">PhonePe</span>
+                </button>
+                
+                <button onclick="openUPIApp('paytm')" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 bg-blue-600 rounded-full mb-2 flex items-center justify-center">
+                        <span class="text-white font-bold">P</span>
+                    </div>
+                    <span class="text-sm">Paytm</span>
+                </button>
+                
+                <button onclick="openUPIApp('paytm')" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 bg-indigo-600 rounded-full mb-2 flex items-center justify-center">
+                        <span class="text-white font-bold">C</span>
+                    </div>
+                    <span class="text-sm">CRED</span>
+                </button>
+                
+                <button onclick="openUPIApp('upi')" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 bg-orange-500 rounded-full mb-2 flex items-center justify-center">
+                        <span class="text-white font-bold">U</span>
+                    </div>
+                    <span class="text-sm">BHIM UPI</span>
+                </button>
+                
+                <button onclick="openUPIApp('default')" class="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50 transition">
+                    <div class="w-12 h-12 bg-gray-600 rounded-full mb-2 flex items-center justify-center">
+                        <span class="text-white font-bold">?</span>
+                    </div>
+                    <span class="text-sm">Other App</span>
+                </button>
+            </div>
+            
+            <div class="text-center text-sm text-gray-600">
+                <p>Choose your preferred UPI app to complete payment</p>
+            </div>
+        </div>
     </div>
 
     <div class="text-center mt-6">
@@ -85,9 +163,100 @@
 
 {% block extra_js %}
 <script>
+// Detect if device is mobile
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// Show appropriate UPI options based on device
+function showUPIOptions() {
+    const mobileUPI = document.getElementById('mobileUPI');
+    const desktopUPI = document.getElementById('desktopUPI');
+    
+    if (isMobile()) {
+        mobileUPI.classList.remove('hidden');
+        desktopUPI.classList.add('hidden');
+    } else {
+        mobileUPI.classList.add('hidden');
+        desktopUPI.classList.remove('hidden');
+    }
+}
+
 function copyUPI() {
     navigator.clipboard.writeText("{{ upi_id }}");
     alert("UPI ID copied");
 }
+
+// Show UPI apps modal (mobile only)
+function showUPIModal() {
+    if (!isMobile()) {
+        alert('UPI apps only work on mobile devices. Please use your phone to scan the QR code.');
+        return;
+    }
+    document.getElementById('upiModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close UPI apps modal
+function closeUPIModal() {
+    document.getElementById('upiModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Open specific UPI app
+function openUPIApp(app) {
+    const upiLink = "{{ upi_link }}";
+    let appUrl = '';
+    
+    switch(app) {
+        case 'gpay':
+            appUrl = `gpay://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'phonepe':
+            appUrl = `phonepe://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'paytm':
+            appUrl = `paytmmp://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'cred':
+            appUrl = `cred://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'upi':
+            appUrl = `upi://pay?${upiLink.split('?')[1]}`;
+            break;
+        default:
+            // Fallback to generic UPI link
+            window.location.href = upiLink;
+            return;
+    }
+    
+    // Try to open app
+    window.location.href = appUrl;
+    
+    // Close modal after attempting to open app
+    setTimeout(() => {
+        closeUPIModal();
+    }, 1000);
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('upiModal');
+    if (event.target === modal) {
+        closeUPIModal();
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeUPIModal();
+    }
+});
+
+// Initialize UPI options on page load
+document.addEventListener('DOMContentLoaded', function() {
+    showUPIOptions();
+});
 </script>
 {% endblock %}
