@@ -26,14 +26,30 @@
 
     <div class="bg-white p-6 rounded shadow">
         {% for item in cart_items %}
-            <div class="flex justify-between border-b py-2">
-                <span>{{ item.name }} × {{ item.quantity }}</span>
-                <span>₹{{ item.total }}</span>
+            <div class="flex justify-between items-center border-b py-4 hover:bg-gray-50 transition">
+                <!-- Item Details -->
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ item.name }}</h3>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <span>₹{{ item.price }} each</span>
+                        <span class="mx-2">•</span>
+                        <span>Quantity: {{ item.quantity }}</span>
+                    </div>
+                </div>
+                
+                <!-- Price -->
+                <div class="text-right">
+                    <p class="text-xl font-bold text-amber-600">₹{{ item.total }}</p>
+                </div>
             </div>
         {% endfor %}
 
-        <div class="text-right font-bold mt-4">
-            Total: ₹{{ total }}
+        <!-- Total Section -->
+        <div class="border-t-2 border-amber-200 pt-4 mt-6">
+            <div class="flex justify-between items-center">
+                <span class="text-lg font-medium text-gray-700">Total Amount:</span>
+                <span class="text-2xl font-bold text-amber-600">₹{{ total }}</span>
+            </div>
         </div>
 
         <!-- Order Form -->
