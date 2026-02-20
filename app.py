@@ -1,6 +1,7 @@
 from flask import (
     Flask, render_template, request, session,
-    redirect, url_for, jsonify, send_from_directory
+    redirect, url_for, jsonify, send_from_directory,
+    flash
 )
 from datetime import datetime, timezone
 import os
@@ -195,6 +196,15 @@ def create_order_route():
         print("❌ Cart empty, redirecting back")
         return redirect(url_for("cart"))
 
+    # Get customer name from form
+    print("🔍 Form data received:", dict(request.form))  # DEBUG
+    customer_name = request.form.get("customerName", "").strip()
+    print("🔍 Customer name extracted:", repr(customer_name))  # DEBUG
+    if not customer_name or len(customer_name) < 2:
+        print("❌ Invalid customer name")
+        flash("Please enter your name (at least 2 characters)", "error")
+        return redirect(url_for("view_cart"))
+
     # ✅ CREATE ORDER CODE
     order_code = str(uuid.uuid4())[:8].upper()
 
@@ -218,6 +228,7 @@ def create_order_route():
 
     order_data = {
         "orderId": order_code,
+        "customerName": customer_name,  # Add customer name
         "items": items,
         "totalAmount": total,
         "orderStatus": "OPEN",
@@ -322,7 +333,9 @@ def admin():
 def admin_dashboard():
     if not session.get("admin"):
         return redirect(url_for("admin"))
-    return render_template("admin_dashboard.html")
+    
+    today_date = datetime.now().strftime("%B %d, %Y")  # e.g., "February 20, 2026"
+    return render_template("admin_dashboard.html", today_date=today_date)
 
 @app.route("/admin/orders/live")
 def admin_live_orders():
@@ -331,10 +344,40 @@ def admin_live_orders():
 
     try:
         orders = get_all_orders()
-        return jsonify(orders)
+        
+        # Filter orders for today only
+        today = datetime.now().date().isoformat()
+        today_orders = []
+        
+        for order in orders:
+            if order.get("createdAt"):
+                # Handle Firebase timestamp
+                if hasattr(order["createdAt"], "seconds"):
+                    order_date = datetime.fromtimestamp(order["createdAt"].seconds).date().isoformat()
+                else:
+                    order_date = datetime.fromisoformat(str(order["createdAt"]).split("T")[0]).date().isoformat()
+                
+                if order_date == today:
+                    today_orders.append(order)
+        
+        return jsonify(today_orders)
 
     except Exception as e:
         print("❌ admin_live_orders error:", e)
+        return jsonify([])
+
+
+@app.route("/admin/orders/all")
+def admin_all_orders():
+    if not session.get("admin"):
+        return jsonify([])
+
+    try:
+        orders = get_all_orders()
+        return jsonify(orders)
+
+    except Exception as e:
+        print("❌ admin_all_orders error:", e)
         return jsonify([])
 
 

@@ -6,6 +6,17 @@
 
     <h1 class="text-3xl font-bold mb-6">Your Cart</h1>
 
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     {% if not cart_items %}
         <p>Your cart is empty.</p>
         <a href="{{ url_for('index') }}" class="text-amber-600 underline">
@@ -25,15 +36,75 @@
             Total: ₹{{ total }}
         </div>
 
-        <!-- 🔥 THIS IS THE MOST IMPORTANT PART -->
-        <form method="POST" action="{{ url_for('create_order_route') }}" class="mt-6">
-            <button type="submit"
-                class="w-full bg-amber-600 text-white py-3 rounded">
-                Send Order to Counter
+        <!-- Order Form -->
+        <form method="POST" action="{{ url_for('create_order_route') }}" class="mt-6" id="orderForm">
+            <!-- Customer Name Input -->
+            <div class="mb-6">
+                <label for="customerName" class="block text-sm font-medium text-gray-700 mb-2">
+                    Your Name <span class="text-red-500">*</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="customerName" 
+                    name="customerName"
+                    placeholder="Enter your name"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    required>
+            </div>
+
+            <button 
+                type="submit" 
+                id="submitBtn"
+                class="w-full bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors duration-200 cursor-not-allowed"
+                disabled>
+                Please enter your name to place order
             </button>
         </form>
     </div>
 
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerNameInput = document.getElementById('customerName');
+    const submitBtn = document.getElementById('submitBtn');
+    const orderForm = document.getElementById('orderForm');
+
+    // Function to validate and update button state
+    function updateButtonState() {
+        const name = customerNameInput.value.trim();
+        
+        if (name.length >= 2) {
+            // Enable button
+            submitBtn.disabled = false;
+            submitBtn.className = 'w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-lg font-medium transition-colors duration-200 cursor-pointer';
+            submitBtn.textContent = 'Send Order to Counter';
+        } else {
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.className = 'w-full bg-gray-400 text-white py-3 rounded-lg font-medium transition-colors duration-200 cursor-not-allowed';
+            submitBtn.textContent = name.length === 0 ? 'Please enter your name to place order' : 'Name must be at least 2 characters';
+        }
+    }
+
+    // Add input event listener
+    customerNameInput.addEventListener('input', updateButtonState);
+
+    // Add form submit validation
+    orderForm.addEventListener('submit', function(e) {
+        const name = customerNameInput.value.trim();
+        if (name.length < 2) {
+            e.preventDefault();
+            alert('Please enter your name (at least 2 characters)');
+            customerNameInput.focus();
+        }
+    });
+
+    // Initial button state
+    updateButtonState();
+});
+</script>
 {% endblock %}

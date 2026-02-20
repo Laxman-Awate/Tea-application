@@ -46,11 +46,16 @@
     </div>
 </div>
 
-<!-- ================= ORDERS ================= -->
-<div class="bg-white rounded shadow mb-10 overflow-x-auto">
+<!-- ================= ORDERS (TODAY ONLY) ================= -->
+<div class="bg-white rounded shadow mb-6 overflow-x-auto">
+<div class="p-4 border-b bg-amber-50">
+    <h2 class="text-lg font-semibold text-amber-700">Today's Orders</h2>
+    <p class="text-sm text-gray-600">Showing orders placed on {{ today_date }}</p>
+</div>
 <table class="min-w-full">
 <thead class="bg-gray-100">
 <tr>
+    <th class="p-3 text-left">Time</th>
     <th class="p-3 text-left">Customer</th>
     <th class="p-3 text-left">Items</th>
     <th class="p-3 text-center">Total</th>
@@ -62,10 +67,17 @@
 </table>
 </div>
 
-<!-- ================= DAILY SALES ================= -->
+<!-- ================= DAILY SALES REPORT ================= -->
 <div class="bg-white rounded shadow p-6">
-<h2 class="text-xl font-semibold mb-4">Daily Sales Report</h2>
-<div id="dailySales"></div>
+<div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-semibold">Daily Sales Report</h2>
+    <button onclick="loadAllOrders()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+        Load Historical Data
+    </button>
+</div>
+<div id="dailySales" class="space-y-4">
+    <p class="text-gray-500 text-center">Click "Load Historical Data" to view sales history</p>
+</div>
 </div>
 
 </div>
@@ -132,8 +144,34 @@ function updateOrdersTable(orders) {
     const tbody = document.getElementById('ordersBody');
     tbody.innerHTML = '';
 
+    if (orders.length === 0) {
+        tbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-8 text-gray-500">
+                No orders received today yet
+            </td>
+        </tr>`;
+        return;
+    }
+
     orders.forEach(o => {
         const items = o.items.map(i => `${i.name} × ${i.quantity}`).join(', ');
+        
+        // Format time
+        let timeStr = 'N/A';
+        if (o.createdAt) {
+            if (o.createdAt.seconds) {
+                timeStr = new Date(o.createdAt.seconds * 1000).toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } else {
+                timeStr = new Date(o.createdAt).toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        }
 
         const paymentBadge = o.paymentStatus === 'PAID'
             ? `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">PAID</span>`
@@ -144,7 +182,8 @@ function updateOrdersTable(orders) {
             : `<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">DONE</span>`;
 
         tbody.innerHTML += `
-        <tr class="border-t">
+        <tr class="border-t hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm text-gray-600">${timeStr}</td>
             <td class="px-4 py-3 font-medium">${o.customerName || 'Guest'}</td>
             <td class="px-4 py-3 text-sm">${items}</td>
             <td class="px-4 py-3 text-center font-semibold">₹${(o.totalAmount||0).toFixed(2)}</td>
@@ -162,10 +201,20 @@ function updateDailySales(orders) {
         const date = new Date(o.createdAt).toDateString();
 
         if (!daily[date]) {
-            daily[date] = { total: 0, items: {} };
+            daily[date] = { 
+                total: 0, 
+                orders: 0,
+                items: {},
+                paidOrders: 0
+            };
         }
 
         daily[date].total += o.totalAmount || 0;
+        daily[date].orders += 1;
+        
+        if (o.paymentStatus === 'PAID') {
+            daily[date].paidOrders += 1;
+        }
 
         o.items.forEach(i => {
             daily[date].items[i.name] =
@@ -174,22 +223,66 @@ function updateDailySales(orders) {
     });
 
     const container = document.getElementById('dailySales');
-    container.innerHTML = Object.entries(daily).map(([date,data]) => `
-        <div class="mb-6 border rounded-lg">
-            <div class="flex justify-between px-4 py-2 bg-amber-100 font-semibold">
-                <span>${date}</span>
-                <span>₹${data.total.toFixed(2)}</span>
-            </div>
-            <div class="p-4 space-y-2">
-                ${Object.entries(data.items).map(([name,qty]) => `
-                    <div class="flex justify-between bg-gray-50 px-3 py-2 rounded">
-                        <span>${name}</span>
-                        <span>× ${qty}</span>
+    
+    if (Object.keys(daily).length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center">No sales data available</p>';
+        return;
+    }
+
+    // Sort dates by most recent first
+    const sortedDates = Object.entries(daily).sort((a, b) => 
+        new Date(b[0]) - new Date(a[0])
+    );
+
+    container.innerHTML = sortedDates.map(([date, data]) => `
+        <div class="border rounded-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-amber-100 to-orange-100 p-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="font-semibold text-lg">${date}</h3>
+                        <p class="text-sm text-gray-600">
+                            ${data.orders} orders • ${data.paidOrders} paid
+                        </p>
                     </div>
-                `).join('')}
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-green-600">₹${data.total.toFixed(2)}</p>
+                        <p class="text-sm text-gray-600">Revenue</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <h4 class="font-medium mb-3 text-gray-700">Top Items</h4>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    ${Object.entries(data.items)
+                        .sort((a,b) => b[1] - a[1])
+                        .slice(0, 6)
+                        .map(([name, qty]) => `
+                        <div class="flex justify-between bg-gray-50 px-3 py-2 rounded text-sm">
+                            <span class="text-gray-700">${name}</span>
+                            <span class="font-medium text-amber-600">×${qty}</span>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `).join('');
+}
+
+// Load all orders for historical data
+async function loadAllOrders() {
+    try {
+        const container = document.getElementById('dailySales');
+        container.innerHTML = '<p class="text-center text-gray-500">Loading historical data...</p>';
+        
+        const res = await fetch('/admin/orders/all');
+        const orders = await res.json();
+        
+        updateDailySales(orders);
+    } catch (error) {
+        console.error('Error loading all orders:', error);
+        document.getElementById('dailySales').innerHTML = 
+            '<p class="text-center text-red-500">Failed to load historical data</p>';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
