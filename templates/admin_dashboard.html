@@ -88,6 +88,7 @@
 <script>
 let lastOrderCount = 0;
 let soundEnabled = false;
+let historicalDataLoaded = false; // Flag to prevent overwriting historical data
 
 function enableSound() {
     document.getElementById('orderSound').play()
@@ -109,7 +110,11 @@ async function pollOrders() {
 
     updateStats(orders);
     updateOrdersTable(orders);
-    updateDailySales(orders);
+    
+    // Only update daily sales if historical data is not loaded
+    if (!historicalDataLoaded) {
+        updateDailySales(orders);
+    }
 }
 
 function updateStats(orders) {
@@ -251,18 +256,19 @@ function updateDailySales(orders) {
                 </div>
             </div>
             <div class="p-4">
-                <h4 class="font-medium mb-3 text-gray-700">Top Items</h4>
-                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <h4 class="font-medium mb-3 text-gray-700">All Items Sold</h4>
+                <div class="space-y-2 max-h-60 overflow-y-auto">
                     ${Object.entries(data.items)
                         .sort((a,b) => b[1] - a[1])
-                        .slice(0, 6)
                         .map(([name, qty]) => `
-                        <div class="flex justify-between bg-gray-50 px-3 py-2 rounded text-sm">
-                            <span class="text-gray-700">${name}</span>
-                            <span class="font-medium text-amber-600">×${qty}</span>
+                        <div class="flex justify-between bg-gray-50 px-3 py-2 rounded text-sm hover:bg-gray-100 transition-colors">
+                            <span class="text-gray-700 font-medium">${name}</span>
+                            <span class="font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">${qty} sold</span>
                         </div>
                     `).join('')}
                 </div>
+                ${Object.keys(data.items).length === 0 ? 
+                    '<p class="text-gray-500 text-center text-sm">No items sold on this day</p>' : ''}
             </div>
         </div>
     `).join('');
@@ -277,12 +283,32 @@ async function loadAllOrders() {
         const res = await fetch('/admin/orders/all');
         const orders = await res.json();
         
+        // Set flag to prevent overwriting
+        historicalDataLoaded = true;
+        
         updateDailySales(orders);
+        
+        // Add a reset button to go back to today's view
+        const resetBtn = `
+            <div class="text-center mt-4">
+                <button onclick="resetToToday()" class="bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700">
+                    Back to Today's Data
+                </button>
+            </div>
+        `;
+        container.innerHTML += resetBtn;
+        
     } catch (error) {
         console.error('Error loading all orders:', error);
         document.getElementById('dailySales').innerHTML = 
             '<p class="text-center text-red-500">Failed to load historical data</p>';
     }
+}
+
+// Reset to today's data
+function resetToToday() {
+    historicalDataLoaded = false;
+    pollOrders();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

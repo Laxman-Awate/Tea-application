@@ -4,95 +4,164 @@
 {% block content %}
 
 <!-- ================= TOP HEADER ================= -->
-<div class="bg-gradient-to-r from-orange-500 to-amber-500 py-8 mb-6">
-    <div class="text-center text-white px-4">
-        <h1 class="text-3xl md:text-5xl font-bold tracking-wide">
-            ☕ VIJETA ☕
+<div class="bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600 py-6 mb-6 relative overflow-hidden">
+    <!-- Decorative pattern -->
+    <div class="absolute inset-0 opacity-10">
+        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+    </div>
+    
+    <div class="text-center text-white px-4 relative z-10">
+        <div class="mb-2">
+            <span class="text-3xl md:text-4xl animate-pulse">☕</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-wide drop-shadow-lg">
+            VIJETA
         </h1>
-        <p class="mt-1 text-base md:text-lg opacity-90">
+        <p class="mt-1 text-sm md:text-base opacity-95 font-light">
             Amrutulya Chaha
         </p>
-        <div class="w-20 h-1 bg-white mx-auto mt-3 rounded"></div>
+        <div class="flex items-center justify-center gap-2 mt-2">
+            <div class="w-8 h-0.5 bg-white rounded-full"></div>
+            <span class="text-xs opacity-75">Since 2024</span>
+            <div class="w-8 h-0.5 bg-white rounded-full"></div>
+        </div>
     </div>
 </div>
 <!-- ================================================= -->
 
 <div class="max-w-6xl mx-auto px-3 md:px-4">
 
-    <h1 class="text-2xl md:text-3xl font-bold text-center mb-6">
-        Our Menu
-    </h1>
-
-    {% for category, items in menu_by_category.items() %}
-    <div class="bg-white rounded-xl shadow-sm mb-6 p-4">
-
-        <!-- Category Title -->
-        <h2 class="text-lg md:text-xl font-semibold text-amber-700 border-b pb-2 mb-3">
-            {{ category }}
-        </h2>
-
-        {% for item in items %}
-        <div class="flex justify-between items-center py-3 border-b last:border-b-0">
-
-            <!-- Item Name -->
-            <div class="flex-1">
-                <p class="text-gray-800 font-medium">
-                    {{ item.name }}
-                </p>
+    <!-- Menu Header with Stats -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
+            Our Menu
+        </h1>
+        <p class="text-gray-600 text-lg">Choose from our delicious selection</p>
+        
+        <!-- Quick Stats -->
+        <div class="flex justify-center gap-6 mt-6">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-amber-600">{{ menu_items|length if menu_items is defined else '0' }}</div>
+                <div class="text-sm text-gray-500">Items</div>
             </div>
-
-            <!-- Right Side -->
-            <div class="flex items-center gap-3">
-
-                <!-- Price -->
-                <span class="text-amber-600 font-semibold">
-                    ₹{{ item.price }}
-                </span>
-
-                <!-- Quantity -->
-                <div class="flex items-center border rounded-lg overflow-hidden">
-                    <button
-                        type="button"
-                        class="px-3 py-1 decrease bg-gray-100"
-                        data-id="{{ item.id }}">
-                        −
-                    </button>
-                    <span
-                        class="px-3 qty"
-                        data-id="{{ item.id }}">
-                        1
-                    </span>
-                    <button
-                        type="button"
-                        class="px-3 py-1 increase bg-gray-100"
-                        data-id="{{ item.id }}">
-                        +
-                    </button>
-                </div>
-
-                <!-- Add Button -->
-                <button
-                    type="button"
-                    class="add-to-cart bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg"
-                    data-id="{{ item.id }}">
-                    Add
-                </button>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-amber-600">{{ menu_by_category|length if menu_by_category is defined else '0' }}</div>
+                <div class="text-sm text-gray-500">Categories</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-amber-600">{{ cart_count if cart_count is defined else '0' }}</div>
+                <div class="text-sm text-gray-500">In Cart</div>
             </div>
         </div>
-        {% endfor %}
+    </div>
+
+    {% for category, items in menu_by_category.items() %}
+    <div class="bg-white rounded-2xl shadow-lg mb-8 overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+
+        <!-- Category Header -->
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-amber-100">
+            <h2 class="text-xl md:text-2xl font-bold text-amber-800 flex items-center gap-3">
+                <span class="text-2xl">
+                    {% if category == 'Tea' %}🍵
+                    {% elif category == 'Snacks' %}🍪
+                    {% elif category == 'Beverages' %}🥤
+                    {% elif category == 'Breakfast' %}🍳
+                    {% else %}🍽️
+                    {% endif %}
+                </span>
+                {{ category }}
+                <span class="ml-auto text-sm font-normal text-gray-500 bg-white px-3 py-1 rounded-full">
+                    {{ items|length }} items
+                </span>
+            </h2>
+        </div>
+
+        <!-- Menu Items -->
+        <div class="p-4">
+            {% for item in items %}
+            <div class="flex items-center justify-between py-4 px-3 rounded-xl hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-200 group border-b border-gray-100 last:border-b-0">
+
+                <!-- Item Details -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start gap-3">
+                        <div class="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0 group-hover:scale-150 transition-transform"></div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-gray-800 group-hover:text-amber-700 transition-colors">
+                                {{ item.name }}
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1">Bestseller</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price & Actions -->
+                <div class="flex items-center gap-4 ml-4">
+                    <!-- Price -->
+                    <div class="text-right">
+                        <div class="text-xl font-bold text-amber-600">
+                            ₹{{ item.price }}
+                        </div>
+                        <div class="text-xs text-gray-500">per item</div>
+                    </div>
+
+                    <!-- Quantity Controls -->
+                    <div class="flex items-center bg-gray-50 rounded-xl overflow-hidden border border-gray-200 group-hover:border-amber-300 transition-colors">
+                        <button
+                            type="button"
+                            class="px-3 py-2 text-gray-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 decrease"
+                            data-id="{{ item.id }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                            </svg>
+                        </button>
+                        <span
+                            class="px-4 py-2 font-semibold text-gray-800 min-w-[3rem] text-center qty"
+                            data-id="{{ item.id }}">
+                            1
+                        </span>
+                        <button
+                            type="button"
+                            class="px-3 py-2 text-gray-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 increase"
+                            data-id="{{ item.id }}">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Add Button -->
+                    <button
+                        type="button"
+                        class="add-to-cart bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+                        data-id="{{ item.id }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span>Add</span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
     {% endfor %}
 </div>
 
 <!-- Floating Cart Button -->
 <a href="{{ url_for('view_cart') }}"
-   class="fixed bottom-5 right-5 bg-amber-600 hover:bg-amber-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-xl text-xl">
-    🛒
+   class="fixed bottom-6 right-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-2xl text-2xl transform hover:scale-110 transition-all duration-300 group">
+    <span class="relative">
+        🛒
+        <span class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></span>
+    </span>
     {% if cart_count > 0 %}
-    <span class="absolute -top-2 -right-2 bg-red-500 text-xs rounded-full px-2 py-0.5">
+    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-bounce">
         {{ cart_count }}
     </span>
     {% endif %}
+    <span class="absolute bottom-full right-0 mb-2 bg-gray-800 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+        View Cart
+    </span>
 </a>
 
 {% endblock %}
@@ -103,7 +172,12 @@
 document.querySelectorAll('.increase').forEach(btn => {
     btn.addEventListener('click', () => {
         const qty = document.querySelector(`.qty[data-id="${btn.dataset.id}"]`);
-        qty.textContent = parseInt(qty.textContent) + 1;
+        const currentVal = parseInt(qty.textContent);
+        qty.textContent = currentVal + 1;
+        
+        // Add animation
+        qty.classList.add('scale-125');
+        setTimeout(() => qty.classList.remove('scale-125'), 200);
     });
 });
 
@@ -112,7 +186,13 @@ document.querySelectorAll('.decrease').forEach(btn => {
     btn.addEventListener('click', () => {
         const qty = document.querySelector(`.qty[data-id="${btn.dataset.id}"]`);
         const val = parseInt(qty.textContent);
-        if (val > 1) qty.textContent = val - 1;
+        if (val > 1) {
+            qty.textContent = val - 1;
+            
+            // Add animation
+            qty.classList.add('scale-75');
+            setTimeout(() => qty.classList.remove('scale-75'), 200);
+        }
     });
 });
 
@@ -121,6 +201,11 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
     btn.addEventListener('click', async () => {
         const id = btn.dataset.id;
         const qty = document.querySelector(`.qty[data-id="${id}"]`).textContent;
+        
+        // Show loading state
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+        btn.disabled = true;
 
         try {
             const res = await fetch('/add_to_cart', {
@@ -130,10 +215,27 @@ document.querySelectorAll('.add-to-cart').forEach(btn => {
             });
 
             if (res.ok) {
-                location.reload();
+                // Success animation
+                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                btn.classList.add('bg-green-500');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+            } else {
+                throw new Error('Failed to add to cart');
             }
         } catch (err) {
             console.error('Add to cart failed', err);
+            // Reset button
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+            
+            // Show error
+            btn.classList.add('bg-red-500');
+            setTimeout(() => {
+                btn.classList.remove('bg-red-500');
+            }, 1000);
         }
     });
 });

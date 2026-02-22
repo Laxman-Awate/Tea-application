@@ -387,6 +387,11 @@ def admin_logout():
     session.clear()
     return redirect(url_for("index"))
 
+# ------------------ OFFLINE PAGE ------------------
+@app.route("/offline")
+def offline():
+    return render_template("offline.html")
+
 # ------------------ STATIC ------------------
 @app.route("/static/<path:filename>")
 def serve_static(filename):
@@ -398,5 +403,5 @@ def firebase_sw():
 
 # ------------------ RUN ------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
 
