@@ -19,9 +19,23 @@ from firebase_config import (
 
 
 # ------------------ ENV ------------------
-load_dotenv()
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+from dotenv import load_dotenv, find_dotenv
 
+# Clear system environment variable first
+if 'ADMIN_EMAIL' in os.environ:
+    del os.environ['ADMIN_EMAIL']
+    print("🗑️ Cleared system ADMIN_EMAIL")
+
+# Force load .env from current directory
+dotenv_path = find_dotenv()
+if dotenv_path:
+    load_dotenv(dotenv_path, override=True)  # Override system vars
+    print(f"📁 Loading .env from: {dotenv_path}")
+else:
+    print("❌ .env file not found!")
+
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "anjaneykamble5@gmail.com")  # Fallback to your email
+print(f"🔐 Admin email loaded: {ADMIN_EMAIL}")  # Debug line
 # ------------------ APP INIT ------------------
 app = Flask(__name__)
 
@@ -316,6 +330,11 @@ def confirm_payment():
     session["last_order_id"] = data["order_id"]
     session.modified = True
 
+    # Check if user wants to go home
+    redirect_to = request.form.get("redirect_to")
+    if redirect_to == "home":
+        return redirect(url_for("index"))
+    
     return redirect(url_for("order_success"))
 
 
@@ -325,6 +344,8 @@ def confirm_payment():
 def admin():
     if request.method == "POST":
         if request.form.get("email") == ADMIN_EMAIL:
+            print(f"🔑 Login attempt: {request.form.get('email')}")
+            print(f"✅ Expected: {ADMIN_EMAIL}")
             session["admin"] = True
             return redirect(url_for("admin_dashboard"))
     return render_template("admin_login.html")

@@ -22,11 +22,9 @@
             </p>
 
             <div class="bg-gray-100 inline-block p-4 rounded-xl">
-                <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ upi_link }}"
-                    alt="UPI QR Code"
-                    class="mx-auto"
-                >
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ upi_link }}"
+                     alt="UPI QR Code"
+                     class="mx-auto rounded-xl shadow-lg">
             </div>
         </div>
 
@@ -84,9 +82,10 @@
         </div>
 
         <!-- Confirm -->
-        <form action="{{ url_for('confirm_payment') }}" method="POST">
+        <form action="{{ url_for('confirm_payment') }}" method="POST" id="paymentForm">
             <input type="hidden" name="order_id" value="{{ order.order_id }}">
-            <button type="submit"
+            <button type="button"
+                    onclick="showPaymentConfirmation()"
                     class="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition">
                 ✅ I have paid ₹{{ order.total }}
             </button>
@@ -246,6 +245,79 @@ document.addEventListener('click', function(event) {
         closeUPIModal();
     }
 });
+
+// Show payment confirmation popup
+function showPaymentConfirmation() {
+    // Show loading state
+    const modal = document.createElement('div');
+    modal.id = 'paymentConfirmModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center transform scale-100 transition-transform">
+            <div class="mb-6">
+                <!-- UPI App Icons -->
+                <div class="flex justify-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold">G</span>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold">P</span>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold">P</span>
+                    </div>
+                </div>
+                
+                <!-- Success Icon -->
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
+                <p class="text-gray-600 mb-1">Your payment of ₹{{ order.total }} has been confirmed.</p>
+                <p class="text-sm text-green-600 font-medium mb-3">✓ Payment completed via UPI</p>
+                <p class="text-sm text-gray-500">Order #{{ order.order_code }}</p>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <button onclick="goToHome()" 
+                        class="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition">
+                    🏠 Back to Menu
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+}
+
+// Go to home page
+function goToHome() {
+    const modal = document.getElementById('paymentConfirmModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = 'auto';
+    
+    // Submit form first, then redirect
+    const form = document.getElementById('paymentForm');
+    if (form) {
+        // Create a hidden input to indicate home redirect
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'redirect_to';
+        hiddenInput.value = 'home';
+        form.appendChild(hiddenInput);
+        form.submit();
+    } else {
+        // Fallback: direct redirect
+        window.location.href = "{{ url_for('index') }}";
+    }
+}
 
 // Close modal with Escape key
 document.addEventListener('keydown', function(event) {
