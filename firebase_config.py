@@ -12,6 +12,26 @@ def initialize_firebase():
         _db = firestore.client()
         return _db
 
+    # Check for Vercel environment variable first
+    if os.getenv("VERCEL"):
+        # Use environment variable for Vercel
+        service_account_json = os.getenv("FIREBASE_SERVICE_ACCOUNT")
+        if service_account_json:
+            try:
+                import json
+                cred = credentials.Certificate(json.loads(service_account_json))
+                firebase_admin.initialize_app(cred)
+                _db = firestore.client()
+                print("✅ Firebase initialized (Vercel)")
+                return _db
+            except Exception as e:
+                print(f"❌ Firebase init failed (Vercel): {e}")
+                return None
+        else:
+            print("❌ FIREBASE_SERVICE_ACCOUNT not set")
+            return None
+    
+    # Local development - use file
     cred_path = os.getenv("FIREBASE_CREDENTIALS")
     if not cred_path:
         print("⚠️ FIREBASE_CREDENTIALS not set")
@@ -21,7 +41,7 @@ def initialize_firebase():
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
         _db = firestore.client()
-        print("✅ Firebase initialized")
+        print("✅ Firebase initialized (Local)")
         return _db
     except Exception as e:
         print(f"❌ Firebase init failed: {e}")
