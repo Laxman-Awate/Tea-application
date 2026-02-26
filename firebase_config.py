@@ -64,20 +64,30 @@ def get_menu():
 # ---------------- ORDERS ----------------
 def save_order(order_data):
     try:
+        print("🔥 Attempting to save order to Firebase...")
         db = get_db()
-
-        # 🔥 Fallback if Firebase is unavailable
+        
         if not db:
-            print("⚠️ Firebase unavailable, using local order ID")
-            return order_data.get("orderId")
+            print("❌ Firebase DB not available")
+            print("🔍 Environment variables:", {
+                "VERCEL": os.getenv("VERCEL"),
+                "FIREBASE_SERVICE_ACCOUNT": "SET" if os.getenv("FIREBASE_SERVICE_ACCOUNT") else "NOT SET",
+                "FIREBASE_CREDENTIALS": os.getenv("FIREBASE_CREDENTIALS")
+            })
+            return None
 
+        print("✅ Firebase DB available, saving order...")
         ref = db.collection("orders").document()
         order_data["createdAt"] = firestore.SERVER_TIMESTAMP
         ref.set(order_data)
+        print(f"✅ Order saved with ID: {ref.id}")
         return ref.id
 
     except Exception as e:
-        print(f"❌ create_order failed: {e}")
+        print(f"❌ save_order failed: {e}")
+        print(f"❌ Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ Full traceback: {traceback.format_exc()}")
         return None
 
 

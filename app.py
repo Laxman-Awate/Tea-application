@@ -287,12 +287,14 @@ def create_order_route():
     }
 
     # ✅ SAVE ORDER
+    print("🔥 Attempting to save order...")
     order_id = save_order(order_data)
     print("🧾 ORDER CREATED:", order_id)
 
     if not order_id:
-        print("❌ Order save failed")
-        return redirect(url_for("cart"))
+        print("❌ Order save failed - Firebase issue")
+        flash("Unable to save order. Please try again.", "error")
+        return redirect(url_for("view_cart"))
 
     # ✅ STORE PAYMENT DATA IN SESSION
     session["pending_payment"] = {
