@@ -43,12 +43,14 @@ app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
 
 # Serverless-compatible session configuration
 if os.environ.get("VERCEL"):  # Check if running on Vercel
-    # Use database-backed sessions for serverless
-    app.config["SESSION_TYPE"] = "filesystem"
-    app.config["SESSION_FILE_DIR"] = "/tmp"  # Use /tmp for serverless
+    # Use client-side sessions for serverless (no filesystem)
+    app.config["SESSION_TYPE"] = "null"
     app.config["SESSION_PERMANENT"] = False
     app.config["SESSION_USE_SIGNER"] = True
-    print("🌐 Running on Vercel - serverless session mode")
+    app.config["SESSION_COOKIE_SECURE"] = True
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    print("🌐 Running on Vercel - client-side session mode")
 else:
     # Local development
     app.config["SESSION_TYPE"] = "filesystem"
