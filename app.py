@@ -40,11 +40,23 @@ print(f"🔐 Admin email loaded: {ADMIN_EMAIL}")  # Debug line
 app = Flask(__name__)
 
 app.secret_key = os.environ.get("SECRET_KEY") or os.urandom(24)
-app.config["SESSION_TYPE"] = "filesystem"
-app.config["PERMANENT_SESSION_LIFETIME"] = 3600
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = False  # HTTPS only in prod
+
+# Serverless-compatible session configuration
+if os.environ.get("VERCEL"):  # Check if running on Vercel
+    # Use database-backed sessions for serverless
+    app.config["SESSION_TYPE"] = "filesystem"
+    app.config["SESSION_FILE_DIR"] = "/tmp"  # Use /tmp for serverless
+    app.config["SESSION_PERMANENT"] = False
+    app.config["SESSION_USE_SIGNER"] = True
+    print("🌐 Running on Vercel - serverless session mode")
+else:
+    # Local development
+    app.config["SESSION_TYPE"] = "filesystem"
+    app.config["PERMANENT_SESSION_LIFETIME"] = 3600
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["SESSION_COOKIE_SECURE"] = False  # HTTPS only in prod
+    print("💻 Running locally - standard session mode")
 
 # ------------------ CONTEXT ------------------
 @app.context_processor
@@ -135,21 +147,43 @@ def index():
 # ------------------ CART ------------------
 @app.route("/add_to_cart", methods=["POST"])
 def add_to_cart():
-    session.setdefault("cart", {})
-
-    item_id = request.form.get("item_id")
-    qty = int(request.form.get("quantity", 1))
-
-    if not item_id:
-        return jsonify({"status": "error"}), 400
-
-    session["cart"][item_id] = session["cart"].get(item_id, 0) + qty
-    session.modified = True
-
-    return jsonify({
-        "status": "success",
-        "cart_count": sum(session["cart"].values())
-    })
+    try:
+        item_id = request.form.get("item_id")
+        quantity = int(request.form.get("quantity", 1))
+        
+        print(f"🛒 Add to cart: item_id={item_id}, quantity={quantity}")
+        print(f"🔍 Session before: {dict(session)}")
+        
+        if not item_id:
+            print("❌ No item_id provided")
+            return jsonify({"success": False, "error": "No item ID"})
+        
+        # Initialize cart if not exists
+        if "cart" not in session:
+            session["cart"] = {}
+            print("🛒 Initialized new cart")
+        
+        # Add/update item
+        current_qty = session["cart"].get(item_id, 0)
+        session["cart"][item_id] = current_qty + quantity
+        session.modified = True
+        
+        print(f"✅ Cart updated: {session['cart']}")
+        print(f"🔍 Session after: {dict(session)}")
+        
+        return jsonify({
+            "success": True,
+            "cart_count": sum(session["cart"].values()),
+            "message": f"Added {quantity} item(s) to cart"
+        })
+        
+    except Exception as e:
+        print(f"❌ Add to cart error: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "message": "Failed to add item to cart"
+        })
 
 @app.route("/cart")
 def view_cart():
