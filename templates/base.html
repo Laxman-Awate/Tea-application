@@ -38,23 +38,25 @@
 {% endwith %}
     <!-- Navigation -->
     <nav class="bg-amber-800 text-white shadow-lg">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <a href="{{ url_for('index') }}" class="text-2xl font-bold">Tea Shop</a>
-            <div class="flex items-center space-x-4">
-         <a href="{{ url_for('view_cart') }}" class="relative">
-    <i class="fas fa-shopping-cart text-2xl"></i>
-    {% if cart_count > 0 %}
-    <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-count">
-        {{ cart_count }}
-    </span>
-    {% endif %}
-</a>
-                {% if not session.get('admin') %}
-                    <a href="{{ url_for('admin') }}" class="ml-4">Admin</a>
-                {% else %}
-                    <a href="{{ url_for('admin_dashboard') }}" class="ml-4">Dashboard</a>
-                    <a href="{{ url_for('admin_logout') }}" class="ml-4">Logout</a>
-                {% endif %}
+        <div class="container mx-auto px-3 py-3">
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('index') }}" class="text-lg sm:text-2xl font-bold">Tea Shop</a>
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    <a href="{{ url_for('view_cart') }}" class="relative">
+                        <i class="fas fa-shopping-cart text-xl sm:text-2xl"></i>
+                        {% if cart_count > 0 %}
+                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-count">
+                            {{ cart_count }}
+                        </span>
+                        {% endif %}
+                    </a>
+                    {% if not session.get('admin') %}
+                        <a href="{{ url_for('admin') }}" class="text-sm sm:text-base ml-2 sm:ml-4">Admin</a>
+                    {% else %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="text-sm sm:text-base ml-2 sm:ml-4 hidden sm:inline">Dashboard</a>
+                        <a href="{{ url_for('admin_logout') }}" class="text-sm sm:text-base ml-2 sm:ml-4">Logout</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
@@ -73,7 +75,7 @@
     {% endwith %}
 
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-6">
+    <main class="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {% block content %}{% endblock %}
     </main>
 

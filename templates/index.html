@@ -4,64 +4,64 @@
 {% block content %}
 
 <!-- ================= TOP HEADER ================= -->
-<div class="bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600 py-6 mb-6 relative overflow-hidden">
+<div class="bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-600 py-4 sm:py-6 mb-4 sm:mb-6 relative overflow-hidden">
     <!-- Decorative pattern -->
     <div class="absolute inset-0 opacity-10">
         <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
     </div>
     
-    <div class="text-center text-white px-4 relative z-10">
+    <div class="text-center text-white px-3 sm:px-4 relative z-10">
         <div class="mb-2">
-            <span class="text-3xl md:text-4xl animate-pulse">☕</span>
+            <span class="text-2xl sm:text-3xl md:text-4xl animate-pulse">☕</span>
         </div>
-        <h1 class="text-2xl md:text-3xl font-bold tracking-wide drop-shadow-lg">
+        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide drop-shadow-lg">
             VIJETA
         </h1>
-        <p class="mt-1 text-sm md:text-base opacity-95 font-light">
+        <p class="mt-1 text-xs sm:text-sm md:text-base opacity-95 font-light">
             Amrutulya Chaha
         </p>
         <div class="flex items-center justify-center gap-2 mt-2">
-            <div class="w-8 h-0.5 bg-white rounded-full"></div>
+            <div class="w-6 sm:w-8 h-0.5 bg-white rounded-full"></div>
             <span class="text-xs opacity-75">Since 2024</span>
-            <div class="w-8 h-0.5 bg-white rounded-full"></div>
+            <div class="w-6 sm:w-8 h-0.5 bg-white rounded-full"></div>
         </div>
     </div>
 </div>
 <!-- ================================================= -->
 
-<div class="max-w-6xl mx-auto px-3 md:px-4">
+<div class="max-w-6xl mx-auto px-3 sm:px-4">
 
     <!-- Menu Header with Stats -->
-    <div class="text-center mb-8">
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
+    <div class="text-center mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 mb-2 sm:mb-3">
             Our Menu
         </h1>
-        <p class="text-gray-600 text-lg">Choose from our delicious selection</p>
+        <p class="text-gray-600 text-sm sm:text-base lg:text-lg">Choose from our delicious selection</p>
         
         <!-- Quick Stats -->
-        <div class="flex justify-center gap-6 mt-6">
+        <div class="flex justify-center gap-4 sm:gap-6 mt-4 sm:mt-6">
             <div class="text-center">
-                <div class="text-2xl font-bold text-amber-600">{{ menu_items|length if menu_items is defined else '0' }}</div>
-                <div class="text-sm text-gray-500">Items</div>
+                <div class="text-xl sm:text-2xl font-bold text-amber-600">{{ menu_items|length if menu_items is defined else '0' }}</div>
+                <div class="text-xs sm:text-sm text-gray-500">Items</div>
             </div>
             <div class="text-center">
-                <div class="text-2xl font-bold text-amber-600">{{ menu_by_category|length if menu_by_category is defined else '0' }}</div>
-                <div class="text-sm text-gray-500">Categories</div>
+                <div class="text-xl sm:text-2xl font-bold text-amber-600">{{ menu_by_category|length if menu_by_category is defined else '0' }}</div>
+                <div class="text-xs sm:text-sm text-gray-500">Categories</div>
             </div>
             <div class="text-center">
-                <div class="text-2xl font-bold text-amber-600">{{ cart_count if cart_count is defined else '0' }}</div>
-                <div class="text-sm text-gray-500">In Cart</div>
+                <div class="text-xl sm:text-2xl font-bold text-amber-600">{{ cart_count if cart_count is defined else '0' }}</div>
+                <div class="text-xs sm:text-sm text-gray-500">In Cart</div>
             </div>
         </div>
     </div>
 
     {% for category, items in menu_by_category.items() %}
-    <div class="bg-white rounded-2xl shadow-lg mb-8 overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+    <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg mb-6 sm:mb-8 overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
 
         <!-- Category Header -->
-        <div class="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-amber-100">
-            <h2 class="text-xl md:text-2xl font-bold text-amber-800 flex items-center gap-3">
-                <span class="text-2xl">
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 px-4 sm:px-6 py-3 sm:py-4 border-b border-amber-100">
+            <h2 class="text-lg sm:text-xl md:text-2xl font-bold text-amber-800 flex items-center gap-2 sm:gap-3">
+                <span class="text-xl sm:text-2xl">
                     {% if category == 'Tea' %}🍵
                     {% elif category == 'Snacks' %}🍪
                     {% elif category == 'Beverages' %}🥤
@@ -69,76 +69,80 @@
                     {% else %}🍽️
                     {% endif %}
                 </span>
-                {{ category }}
-                <span class="ml-auto text-sm font-normal text-gray-500 bg-white px-3 py-1 rounded-full">
+                <span class="truncate">{{ category }}</span>
+                <span class="ml-auto text-xs sm:text-sm font-normal text-gray-500 bg-white px-2 sm:px-3 py-1 rounded-full whitespace-nowrap">
                     {{ items|length }} items
                 </span>
             </h2>
         </div>
 
         <!-- Menu Items -->
-        <div class="p-4">
+        <div class="p-3 sm:p-4">
             {% for item in items %}
-            <div class="flex items-center justify-between py-4 px-3 rounded-xl hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-200 group border-b border-gray-100 last:border-b-0">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between py-3 sm:py-4 px-3 rounded-xl hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 transition-all duration-200 group border-b border-gray-100 last:border-b-0 gap-3">
 
                 <!-- Item Details -->
                 <div class="flex-1 min-w-0">
-                    <div class="flex items-start gap-3">
+                    <div class="flex items-start gap-2 sm:gap-3">
                         <div class="w-2 h-2 bg-amber-400 rounded-full mt-2 flex-shrink-0 group-hover:scale-150 transition-transform"></div>
                         <div class="flex-1">
-                            <h3 class="text-lg font-semibold text-gray-800 group-hover:text-amber-700 transition-colors">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800 group-hover:text-amber-700 transition-colors">
                                 {{ item.name }}
                             </h3>
-                            <p class="text-sm text-gray-500 mt-1">Bestseller</p>
+                            <p class="text-xs sm:text-sm text-gray-500 mt-1">Bestseller</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Price & Actions -->
-                <div class="flex items-center gap-4 ml-4">
+                <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 mt-2 sm:mt-0">
                     <!-- Price -->
-                    <div class="text-right">
-                        <div class="text-xl font-bold text-amber-600">
+                    <div class="text-left sm:text-right">
+                        <div class="text-lg sm:text-xl font-bold text-amber-600">
                             ₹{{ item.price }}
                         </div>
                         <div class="text-xs text-gray-500">per item</div>
                     </div>
 
-                    <!-- Quantity Controls -->
-                    <div class="flex items-center bg-gray-50 rounded-xl overflow-hidden border border-gray-200 group-hover:border-amber-300 transition-colors">
+                    <!-- Mobile Stack: Quantity + Add Button -->
+                    <div class="flex items-center gap-2">
+                        <!-- Quantity Controls -->
+                        <div class="flex items-center bg-gray-50 rounded-lg sm:rounded-xl overflow-hidden border border-gray-200 group-hover:border-amber-300 transition-colors">
+                            <button
+                                type="button"
+                                class="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 decrease"
+                                data-id="{{ item.id }}">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                </svg>
+                            </button>
+                            <span
+                                class="px-2 sm:px-4 py-1.5 sm:py-2 font-semibold text-gray-800 min-w-[2rem] sm:min-w-[3rem] text-center qty"
+                                data-id="{{ item.id }}">
+                                1
+                            </span>
+                            <button
+                                type="button"
+                                class="px-2 sm:px-3 py-1.5 sm:py-2 text-gray-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 increase"
+                                data-id="{{ item.id }}">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Add Button -->
                         <button
                             type="button"
-                            class="px-3 py-2 text-gray-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 decrease"
+                            class="add-to-cart bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-1 sm:gap-2 text-sm sm:text-base"
                             data-id="{{ item.id }}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                             </svg>
-                        </button>
-                        <span
-                            class="px-4 py-2 font-semibold text-gray-800 min-w-[3rem] text-center qty"
-                            data-id="{{ item.id }}">
-                            1
-                        </span>
-                        <button
-                            type="button"
-                            class="px-3 py-2 text-gray-600 hover:bg-amber-100 hover:text-amber-700 transition-all duration-200 increase"
-                            data-id="{{ item.id }}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
+                            <span class="hidden sm:inline">Add</span>
+                            <span class="sm:hidden">+</span>
                         </button>
                     </div>
-
-                    <!-- Add Button -->
-                    <button
-                        type="button"
-                        class="add-to-cart bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-5 py-2.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-                        data-id="{{ item.id }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        <span>Add</span>
-                    </button>
                 </div>
             </div>
             {% endfor %}
