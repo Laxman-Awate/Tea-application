@@ -325,29 +325,56 @@ def order_success():
     )
 
 
-# ------------------ PAYMENT (NO FIRESTORE) ------------------
+# ------------------ PAYMENT ------------------
 @app.route("/payment")
 def payment():
     data = session.get("pending_payment")
     if not data:
         return redirect(url_for("index"))
 
-    upi_id = "yourstore@upi"
+    upi_id = "yourstore@upi"  # Replace with your actual UPI ID
     payee_name = "Vijeta Cafe"
     amount = data["total"]
+    order_code = data["order_code"]
 
+    # UPI payment link with amount pre-filled
     upi_link = (
         f"upi://pay?"
         f"pa={upi_id}&pn={payee_name}"
         f"&am={amount}&cu=INR"
-        f"&tn=Order%20{data['order_code']}"
+        f"&tn=Order%20{order_code}"
+    )
+
+    # Individual UPI app links with amount pre-filled
+    gpay_link = (
+        f"tez://upi/pay?"
+        f"pa={upi_id}&pn={payee_name}"
+        f"&am={amount}&cu=INR"
+        f"&tn=Order%20{order_code}"
+    )
+    
+    phonepe_link = (
+        f"phonepe://pay?"
+        f"pa={upi_id}&pn={payee_name}"
+        f"&am={amount}&cu=INR"
+        f"&tn=Order%20{order_code}"
+    )
+    
+    paytm_link = (
+        f"paytmmp://pay?"
+        f"pa={upi_id}&pn={payee_name}"
+        f"&am={amount}&cu=INR"
+        f"&tn=Order%20{order_code}"
     )
 
     return render_template(
         "payment.html",
         order=data,
         upi_link=upi_link,
-        upi_id=upi_id
+        upi_id=upi_id,
+        gpay_link=gpay_link,
+        phonepe_link=phonepe_link,
+        paytm_link=paytm_link
     )
 
 # ------------------ CONFIRM PAYMENT ------------------
