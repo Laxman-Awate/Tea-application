@@ -332,7 +332,7 @@ def payment():
     if not data:
         return redirect(url_for("index"))
 
-    upi_id = "yourstore@upi"  # Replace with your actual UPI ID
+    upi_id = "q391330410@ybl"  # Replace with your actual UPI ID
     payee_name = "Vijeta Cafe"
     amount = data["total"]
     order_code = data["order_code"]
