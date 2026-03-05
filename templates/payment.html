@@ -43,6 +43,7 @@
                 </a>
                 
                 <a href="{{ phonepe_link }}" 
+                   onclick="handlePhonePeClick(event)"
                    class="flex flex-col items-center p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
                     <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mb-1">
                         <span class="text-white font-bold text-sm">P</span>
@@ -334,6 +335,21 @@ function goToHome() {
         // Fallback: direct redirect
         window.location.href = "{{ url_for('index') }}";
     }
+}
+
+// Handle PhonePe click with fallback
+function handlePhonePeClick(event) {
+    event.preventDefault();
+    const phonepeLink = "{{ phonepe_link }}";
+    
+    // Try to open PhonePe
+    window.location.href = phonepeLink;
+    
+    // Fallback: Copy UPI ID and show instructions
+    setTimeout(() => {
+        copyUPI();
+        alert("PhonePe didn't open? UPI ID copied! Open PhonePe manually and paste.");
+    }, 1000);
 }
 
 // Close modal with Escape key
