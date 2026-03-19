@@ -468,7 +468,35 @@ def payment():
     # If payment system is not available, use simple payment flow
     if not PAYMENT_SYSTEM_AVAILABLE:
         print("⚠️ Using simple payment template")
-        return render_template("payment.html", order=data)
+        
+        # Generate UPI links for simple payment
+        upi_id = os.environ.get("UPI_ID", "9606437915-3@ybl")
+        payee_name = os.environ.get("PAYEE_NAME", "Laxman")
+        amount = data["total"]
+        order_code = data["order_code"]
+        
+        # UPI payment link
+        upi_link = (
+            f"upi://pay?"
+            f"pa={upi_id}&"
+            f"pn={payee_name}&"
+            f"am={amount}&"
+            f"cu=INR&"
+            f"tn=Order%20{order_code}"
+        )
+        
+        # UPI app specific links
+        gpay_link = f"tez://upi/pay?pa={upi_id}&pn={payee_name}&am={amount}&cu=INR&tn=Order%20{order_code}"
+        phonepe_link = f"phonepe://upi/pay?pa={upi_id}&pn={payee_name}&am={amount}&cu=INR&tn=Order%20{order_code}"
+        paytm_link = f"paytmmp://upi/pay?pa={upi_id}&pn={payee_name}&am={amount}&cu=INR&tn=Order%20{order_code}"
+        
+        return render_template("payment.html", 
+                           order=data,
+                           upi_link=upi_link,
+                           upi_id=upi_id,
+                           gpay_link=gpay_link,
+                           phonepe_link=phonepe_link,
+                           paytm_link=paytm_link)
 
     # Verify transaction exists and is valid
     transaction_id = data.get("transaction_id")
@@ -522,9 +550,11 @@ def payment():
         # UPI payment link
         upi_link = (
             f"upi://pay?"
-            f"pa={upi_id}&pn={payee_name}"
-            f"&am={amount}&cu=INR"
-            f"&tn=Order%20{order_code}"
+            f"pa={upi_id}&"
+            f"pn={payee_name}&"
+            f"am={amount}&"
+            f"cu=INR&"
+            f"tn=Order%20{order_code}"
         )
 
         return render_template(
