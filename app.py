@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import os
 import uuid
 from dotenv import load_dotenv
+import json
 
 # 🔥 Firebase helpers
 from firebase_config import (
@@ -16,6 +17,25 @@ from firebase_config import (
     get_db,
     send_push_to_admins
 )
+
+# 🔐 Payment system
+from payment_gateway import payment_gateway
+from transaction_manager import transaction_manager
+from payment_middleware import (
+    require_payment_verified,
+    validate_payment_session,
+    rate_limit_payment_attempts,
+    validate_payment_payload,
+    secure_transaction_access,
+    log_payment_activity
+)
+from security_handlers import (
+    error_handler,
+    duplicate_prevention,
+    network_handler,
+    security_validator
+)
+import secrets
 
 
 # ------------------ ENV ------------------
@@ -249,6 +269,7 @@ def create_order_route():
     # Get customer name from form
     print("🔍 Form data received:", dict(request.form))  # DEBUG
     customer_name = request.form.get("customerName", "").strip()
+    customer_email = request.form.get("customerEmail", "").strip()
     print("🔍 Customer name extracted:", repr(customer_name))  # DEBUG
     if not customer_name or len(customer_name) < 2:
         print("❌ Invalid customer name")
@@ -278,10 +299,11 @@ def create_order_route():
 
     order_data = {
         "orderId": order_code,
-        "customerName": customer_name,  # Add customer name
+        "customerName": customer_name,
+        "customerEmail": customer_email,
         "items": items,
         "totalAmount": total,
-        "orderStatus": "OPEN",
+        "orderStatus": "PENDING_PAYMENT",
         "paymentStatus": "PENDING",
         "createdAt": datetime.now(timezone.utc)
     }
@@ -296,11 +318,27 @@ def create_order_route():
         flash("Unable to save order. Please try again.", "error")
         return redirect(url_for("view_cart"))
 
+    # ✅ CREATE TRANSACTION
+    try:
+        transaction = transaction_manager.create_transaction(
+            order_id=order_id,
+            amount=total,
+            customer_name=customer_name,
+            customer_email=customer_email
+        )
+        print("🔐 TRANSACTION CREATED:", transaction["transaction_id"])
+    except Exception as e:
+        print("❌ Transaction creation failed:", e)
+        flash("Unable to create payment transaction. Please try again.", "error")
+        return redirect(url_for("view_cart"))
+
     # ✅ STORE PAYMENT DATA IN SESSION
     session["pending_payment"] = {
         "order_id": order_id,
         "order_code": order_code,
-        "total": total
+        "total": total,
+        "transaction_id": transaction["transaction_id"],
+        "security_token": transaction["security_token"]
     }
 
     # ✅ CLEAR CART
@@ -312,7 +350,9 @@ def create_order_route():
 
 
 @app.route("/order/success")
+@require_payment_verified
 def order_success():
+    """Protected success page - requires verified payment"""
     data = session.get("pending_payment")
 
     if not data:
@@ -327,17 +367,61 @@ def order_success():
 
 # ------------------ PAYMENT ------------------
 @app.route("/payment")
+@validate_payment_session
 def payment():
+    """Secure payment page with transaction validation"""
     data = session.get("pending_payment")
     if not data:
         return redirect(url_for("index"))
 
-    upi_id = "q391330410@ybl"  # Replace with your actual UPI ID
+    # Verify transaction exists and is valid
+    transaction = transaction_manager.get_transaction(data["transaction_id"])
+    
+    if not transaction:
+        flash("Invalid payment session. Please try again.", "error")
+        return redirect(url_for("index"))
+    
+    # Check if transaction is expired
+    if transaction.get("status") == "EXPIRED":
+        flash("Payment session expired. Please try again.", "error")
+        return redirect(url_for("index"))
+    
+    # Check if transaction is already completed
+    if transaction.get("status") == "SUCCESS":
+        return redirect(url_for("order_success"))
+
+    # Create payment order with gateway
+    try:
+        order_result = payment_gateway.create_order(
+            amount=data["total"],
+            receipt=data["order_code"]
+        )
+        
+        if not order_result["success"]:
+            flash("Unable to initiate payment. Please try again.", "error")
+            return redirect(url_for("index"))
+        
+        gateway_order = order_result["order"]
+        
+        # Update transaction with gateway order ID
+        transaction_manager.update_transaction_status(
+            data["transaction_id"],
+            "PROCESSING",
+            gateway_order_id=gateway_order["id"]
+        )
+        
+    except Exception as e:
+        print(f"❌ Payment order creation failed: {e}")
+        flash("Payment initialization failed. Please try again.", "error")
+        return redirect(url_for("index"))
+
+    # UPI payment details
+    upi_id = "q391330410@ybl"
     payee_name = "Vijeta Cafe"
     amount = data["total"]
     order_code = data["order_code"]
 
-    # UPI payment link with amount pre-filled
+    # UPI payment link
     upi_link = (
         f"upi://pay?"
         f"pa={upi_id}&pn={payee_name}"
@@ -345,62 +429,288 @@ def payment():
         f"&tn=Order%20{order_code}"
     )
 
-    # Individual UPI app links with amount pre-filled
-    gpay_link = (
-        f"tez://upi/pay?"
-        f"pa={upi_id}&pn={payee_name}"
-        f"&am={amount}&cu=INR"
-        f"&tn=Order%20{order_code}"
-    )
-    
-    phonepe_link = (
-        f"phonepe://pay?"
-        f"pa={upi_id}&pn={payee_name}"
-        f"&am={amount}&cu=INR"
-        f"&tn=Order%20{order_code}"
-    )
-    
-    paytm_link = (
-        f"paytmmp://pay?"
-        f"pa={upi_id}&pn={payee_name}"
-        f"&am={amount}&cu=INR"
-        f"&tn=Order%20{order_code}"
-    )
-
     return render_template(
-        "payment.html",
+        "secure_payment.html",
         order=data,
+        transaction=transaction,
+        gateway_order=gateway_order,
         upi_link=upi_link,
         upi_id=upi_id,
-        gpay_link=gpay_link,
-        phonepe_link=phonepe_link,
-        paytm_link=paytm_link
+        gateway_key=order_result["razorpay_key"]
     )
 
-# ------------------ CONFIRM PAYMENT ------------------
-@app.route("/order/confirm_payment", methods=["POST"])
-def confirm_payment():
-    data = session.get("pending_payment")
-    if not data:
-        return redirect(url_for("index"))
 
-    db = get_db()
-    db.collection("orders").document(data["order_id"]).update({
-        "orderStatus": "PAID",
-        "paymentStatus": "PAID",
-        "updatedAt": datetime.now(timezone.utc)
-    })
+# ------------------ SECURE PAYMENT VERIFICATION ------------------
+@app.route("/payment/verify", methods=["POST"])
+@rate_limit_payment_attempts(max_attempts=5, window_minutes=15)
+@validate_payment_payload
+@log_payment_activity("payment_verification")
+def verify_payment():
+    """Secure payment verification endpoint with enhanced security"""
+    try:
+        payment_data = request.validated_payment_data
+        pending_payment = session.get("pending_payment")
+        
+        if not pending_payment:
+            return jsonify(error_handler.handle_payment_error("SESSION_EXPIRED")), 400
+        
+        # Check for duplicate payments
+        if duplicate_prevention.is_duplicate_payment(
+            pending_payment["order_id"], 
+            payment_data["payment_id"]
+        ):
+            return jsonify({
+                "success": False,
+                "error": "Duplicate payment detected",
+                "code": "DUPLICATE_PAYMENT",
+                "user_message": "Payment already processed. Please check your order status."
+            }), 400
+        
+        # Verify transaction access
+        verification = transaction_manager.verify_transaction_access(
+            pending_payment["transaction_id"],
+            pending_payment["security_token"],
+            request
+        )
+        
+        if not verification["valid"]:
+            return jsonify(error_handler.handle_payment_error("TRANSACTION_NOT_FOUND")), 403
+        
+        transaction = verification["transaction"]
+        
+        # Check transaction status
+        if transaction.get("status") not in ["INITIATED", "PROCESSING"]:
+            return jsonify({
+                "success": False,
+                "error": f"Transaction already {transaction.get('status').lower()}",
+                "code": "INVALID_TRANSACTION_STATE",
+                "user_message": f"Transaction is already {transaction.get('status').lower()}."
+            }), 400
+        
+        # Verify payment signature with network failure handling
+        try:
+            signature_valid = payment_gateway.verify_payment_signature(
+                payment_data["order_id"],
+                payment_data["payment_id"],
+                payment_data["signature"]
+            )
+        except Exception as e:
+            error_response = network_handler.handle_payment_gateway_failure(
+                e, transaction["transaction_id"]
+            )
+            return jsonify(error_response), 500
+        
+        if not signature_valid:
+            return jsonify(error_handler.handle_payment_error("INVALID_SIGNATURE")), 400
+        
+        # Record payment attempt
+        try:
+            transaction_manager.record_payment_attempt(
+                transaction["transaction_id"],
+                payment_data,
+                request
+            )
+        except Exception as e:
+            print(f"❌ Failed to record payment attempt: {e}")
+        
+        # Capture payment with retry logic
+        try:
+            capture_result = network_handler.with_retry(max_retries=2)(
+                payment_gateway.capture_payment
+            )(payment_data["payment_id"], pending_payment["total"])
+        except Exception as e:
+            error_response = network_handler.handle_payment_gateway_failure(
+                e, transaction["transaction_id"]
+            )
+            
+            # Update transaction as failed
+            try:
+                transaction_manager.update_transaction_status(
+                    transaction["transaction_id"],
+                    "FAILED",
+                    gateway_payment_id=payment_data["payment_id"],
+                    gateway_signature=payment_data["signature"],
+                    error_message=str(e)
+                )
+            except Exception as update_error:
+                print(f"❌ Failed to update transaction status: {update_error}")
+            
+            return jsonify(error_response), 500
+        
+        if not capture_result["success"]:
+            # Update transaction as failed
+            try:
+                transaction_manager.update_transaction_status(
+                    transaction["transaction_id"],
+                    "FAILED",
+                    gateway_payment_id=payment_data["payment_id"],
+                    gateway_signature=payment_data["signature"],
+                    error_message=capture_result["error"]
+                )
+            except Exception as e:
+                print(f"❌ Failed to update transaction status: {e}")
+            
+            return jsonify(error_handler.handle_payment_error(
+                "PAYMENT_FAILED",
+                details=capture_result["error"]
+            )), 400
+        
+        # Update transaction as successful
+        try:
+            updated_transaction = transaction_manager.update_transaction_status(
+                transaction["transaction_id"],
+                "SUCCESS",
+                gateway_payment_id=payment_data["payment_id"],
+                gateway_signature=payment_data["signature"],
+                payment_captured=True
+            )
+        except Exception as e:
+            print(f"❌ Failed to update transaction to success: {e}")
+            # Continue anyway since payment was captured
+        
+        # Update order status
+        try:
+            db = get_db()
+            db.collection("orders").document(pending_payment["order_id"]).update({
+                "orderStatus": "CONFIRMED",
+                "paymentStatus": "PAID",
+                "paymentVerifiedAt": datetime.now(timezone.utc),
+                "updatedAt": datetime.now(timezone.utc),
+                "gatewayPaymentId": payment_data["payment_id"]
+            })
+        except Exception as e:
+            print(f"❌ Failed to update order status: {e}")
+            # Continue anyway since payment was successful
+        
+        # Set verified payment session
+        session["verified_payment"] = {
+            "transaction_id": transaction["transaction_id"],
+            "security_token": transaction["security_token"],
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "payment_id": payment_data["payment_id"]
+        }
+        
+        # Clear pending payment
+        session.pop("pending_payment", None)
+        session.modified = True
+        
+        return jsonify({
+            "success": True,
+            "message": "Payment verified successfully",
+            "redirect_to": url_for("order_success"),
+            "transaction_id": transaction["transaction_id"]
+        })
+        
+    except Exception as e:
+        print(f"❌ Payment verification error: {e}")
+        return jsonify(error_handler.handle_payment_error(
+            "PAYMENT_FAILED",
+            details=str(e)
+        )), 500
 
-    session.pop("pending_payment", None)
-    session["last_order_id"] = data["order_id"]
-    session.modified = True
 
-    # Check if user wants to go home
-    redirect_to = request.form.get("redirect_to")
-    if redirect_to == "home":
-        return redirect(url_for("index"))
-    
-    return redirect(url_for("order_success"))
+# ------------------ PAYMENT STATUS CHECK ------------------
+@app.route("/api/payment_status/<transaction_id>")
+@secure_transaction_access
+def check_payment_status(transaction_id):
+    """Check payment status with security validation"""
+    try:
+        transaction = request.current_transaction
+        
+        # Get payment status from gateway
+        if transaction.get("gateway_payment_id"):
+            status_result = payment_gateway.get_payment_status(
+                transaction["gateway_payment_id"]
+            )
+            
+            if status_result["success"]:
+                return jsonify({
+                    "success": True,
+                    "status": status_result["status"],
+                    "transaction": {
+                        "transaction_id": transaction["transaction_id"],
+                        "order_id": transaction["order_id"],
+                        "amount": transaction["amount"],
+                        "status": transaction["status"],
+                        "created_at": transaction["created_at"].isoformat() if transaction.get("created_at") else None
+                    }
+                })
+        
+        # Fallback to transaction status
+        return jsonify({
+            "success": True,
+            "status": transaction.get("status", "UNKNOWN"),
+            "transaction": {
+                "transaction_id": transaction["transaction_id"],
+                "order_id": transaction["order_id"],
+                "amount": transaction["amount"],
+                "status": transaction.get("status", "UNKNOWN"),
+                "created_at": transaction["created_at"].isoformat() if transaction.get("created_at") else None
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Payment status check error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Unable to check payment status"
+        }), 500
+
+
+# ------------------ PAYMENT RETRY ------------------
+@app.route("/payment/retry/<transaction_id>", methods=["POST"])
+@secure_transaction_access
+@rate_limit_payment_attempts(max_attempts=3, window_minutes=10)
+def retry_payment(transaction_id):
+    """Retry failed payment with security checks"""
+    try:
+        transaction = request.current_transaction
+        
+        # Check if retry is allowed
+        if transaction.get("status") not in ["FAILED", "CANCELLED"]:
+            return jsonify({
+                "success": False,
+                "error": "Retry not allowed for this transaction"
+            }), 400
+        
+        # Check retry limit
+        if transaction.get("retry_count", 0) >= transaction.get("max_retries", 3):
+            return jsonify({
+                "success": False,
+                "error": "Maximum retry attempts exceeded"
+            }), 429
+        
+        # Reset transaction to initiated
+        updated_transaction = transaction_manager.update_transaction_status(
+            transaction_id,
+            "INITIATED"
+        )
+        
+        # Create new payment order
+        order_result = payment_gateway.create_order(
+            amount=transaction["amount"],
+            receipt=f"retry_{transaction['order_id']}"
+        )
+        
+        if not order_result["success"]:
+            return jsonify({
+                "success": False,
+                "error": "Unable to create retry payment order"
+            }), 500
+        
+        return jsonify({
+            "success": True,
+            "message": "Payment retry initiated",
+            "gateway_order": order_result["order"],
+            "gateway_key": order_result["razorpay_key"]
+        })
+        
+    except Exception as e:
+        print(f"❌ Payment retry error: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Payment retry failed"
+        }), 500
 
 
 
@@ -414,6 +724,48 @@ def admin():
             session["admin"] = True
             return redirect(url_for("admin_dashboard"))
     return render_template("admin_login.html")
+
+@app.route("/admin/approve_payment/<order_id>", methods=["POST"])
+def admin_approve_payment(order_id):
+    if not session.get("admin"):
+        return jsonify({"success": False, "error": "Unauthorized"})
+    
+    db = get_db()
+    order_doc = db.collection("orders").document(order_id).get()
+    
+    if not order_doc.exists:
+        return jsonify({"success": False, "error": "Order not found"})
+    
+    # Update order to PAID
+    db.collection("orders").document(order_id).update({
+        "orderStatus": "PAID",
+        "paymentStatus": "PAID",
+        "paymentVerifiedAt": datetime.now(timezone.utc),
+        "updatedAt": datetime.now(timezone.utc)
+    })
+    
+    return jsonify({"success": True})
+
+@app.route("/admin/reject_payment/<order_id>", methods=["POST"])
+def admin_reject_payment(order_id):
+    if not session.get("admin"):
+        return jsonify({"success": False, "error": "Unauthorized"})
+    
+    db = get_db()
+    order_doc = db.collection("orders").document(order_id).get()
+    
+    if not order_doc.exists:
+        return jsonify({"success": False, "error": "Order not found"})
+    
+    # Update order to REJECTED
+    db.collection("orders").document(order_id).update({
+        "orderStatus": "PAYMENT_REJECTED",
+        "paymentStatus": "REJECTED",
+        "paymentRejectedAt": datetime.now(timezone.utc),
+        "updatedAt": datetime.now(timezone.utc)
+    })
+    
+    return jsonify({"success": True})
 
 @app.route("/admin/dashboard")
 def admin_dashboard():
@@ -479,6 +831,14 @@ def offline():
     return render_template("offline.html")
 
 # ------------------ STATIC ------------------
+@app.route("/test")
+def test_interface():
+    """Test interface for payment system"""
+    if os.environ.get("FLASK_ENV") != "development":
+        return redirect(url_for("index"))
+    
+    return send_from_directory(".", "test_interface.html")
+
 @app.route("/static/<path:filename>")
 def serve_static(filename):
     return send_from_directory("static", filename)
@@ -489,5 +849,129 @@ def firebase_sw():
 
 # ------------------ RUN ------------------
 if __name__ == "__main__":
+    # Set development environment for testing
+    os.environ["FLASK_ENV"] = "development"
     app.run(debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+
+# ------------------ TEST MODE ENDPOINTS ------------------
+@app.route("/test/simulate_payment/<transaction_id>", methods=["POST"])
+def test_simulate_payment(transaction_id):
+    """Test endpoint to simulate successful payment"""
+    if os.environ.get("FLASK_ENV") != "development":
+        return jsonify({"success": False, "error": "Test mode not available"}), 403
+    
+    try:
+        # Get transaction
+        transaction = transaction_manager.get_transaction(transaction_id)
+        if not transaction:
+            return jsonify({"success": False, "error": "Transaction not found"}), 404
+        
+        # Generate mock payment data
+        mock_payment_id = f"pay_test_{secrets.token_hex(8)}"
+        mock_signature = secrets.token_hex(32)
+        
+        # Simulate payment verification
+        payment_data = {
+            "order_id": transaction.get("gateway_order_id"),
+            "payment_id": mock_payment_id,
+            "signature": mock_signature
+        }
+        
+        # Update transaction as successful
+        transaction_manager.update_transaction_status(
+            transaction_id,
+            "SUCCESS",
+            gateway_payment_id=mock_payment_id,
+            gateway_signature=mock_signature,
+            payment_captured=True,
+            test_mode=True
+        )
+        
+        # Update order status
+        db = get_db()
+        db.collection("orders").document(transaction["order_id"]).update({
+            "orderStatus": "CONFIRMED",
+            "paymentStatus": "PAID",
+            "paymentVerifiedAt": datetime.now(timezone.utc),
+            "updatedAt": datetime.now(timezone.utc),
+            "gatewayPaymentId": mock_payment_id,
+            "testMode": True
+        })
+        
+        return jsonify({
+            "success": True,
+            "message": "Test payment simulated successfully",
+            "payment_id": mock_payment_id,
+            "redirect_to": url_for("order_success")
+        })
+        
+    except Exception as e:
+        print(f"❌ Test payment simulation error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/test/fail_payment/<transaction_id>", methods=["POST"])
+def test_fail_payment(transaction_id):
+    """Test endpoint to simulate payment failure"""
+    if os.environ.get("FLASK_ENV") != "development":
+        return jsonify({"success": False, "error": "Test mode not available"}), 403
+    
+    try:
+        # Get transaction
+        transaction = transaction_manager.get_transaction(transaction_id)
+        if not transaction:
+            return jsonify({"success": False, "error": "Transaction not found"}), 404
+        
+        # Update transaction as failed
+        transaction_manager.update_transaction_status(
+            transaction_id,
+            "FAILED",
+            error_message="Test payment failure",
+            test_mode=True
+        )
+        
+        return jsonify({
+            "success": True,
+            "message": "Test payment failure simulated",
+            "status": "FAILED"
+        })
+        
+    except Exception as e:
+        print(f"❌ Test payment failure error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/test/payment_status")
+def test_payment_status():
+    """Test endpoint to check all payment statuses"""
+    if os.environ.get("FLASK_ENV") != "development":
+        return jsonify({"success": False, "error": "Test mode not available"}), 403
+    
+    try:
+        db = get_db()
+        
+        # Get recent transactions
+        transactions = db.collection("transactions")\
+                          .order_by("created_at", direction="DESCENDING")\
+                          .limit(10)\
+                          .get()
+        
+        transaction_list = []
+        for doc in transactions:
+            transaction_data = doc.to_dict()
+            transaction_list.append({
+                "transaction_id": transaction_data.get("transaction_id"),
+                "order_id": transaction_data.get("order_id"),
+                "status": transaction_data.get("status"),
+                "amount": transaction_data.get("amount"),
+                "created_at": transaction_data.get("created_at").isoformat() if transaction_data.get("created_at") else None,
+                "test_mode": transaction_data.get("test_mode", False)
+            })
+        
+        return jsonify({
+            "success": True,
+            "transactions": transaction_list
+        })
+        
+    except Exception as e:
+        print(f"❌ Test payment status error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 

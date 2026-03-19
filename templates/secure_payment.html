@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+{% block title %}Secure Payment{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-10 px-4">
+
+    <!-- Security Badge -->
+    <div class="text-center mb-4">
+        <div class="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            Secure Payment Gateway
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Complete Payment</h1>
+        <p class="text-gray-500 mt-1">
+            Order #{{ order.order_code }} • Transaction ID: {{ transaction.transaction_id[:8] }}...
+        </p>
+    </div>
+
+    <!-- Payment Card -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+
+        <!-- Amount Display -->
+        <div class="text-center mb-6">
+            <p class="text-4xl font-bold text-amber-600">
+                ₹{{ order.total }}
+            </p>
+            <p class="text-gray-500 mt-1">Total Amount</p>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Choose Payment Method</h3>
+            
+            <!-- UPI Payment -->
+            <div class="border rounded-lg p-4 mb-3 hover:border-amber-500 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <span class="text-orange-600 font-bold">₹</span>
+                        </div>
+                        <div>
+                            <p class="font-medium">UPI Payment</p>
+                            <p class="text-sm text-gray-500">Google Pay, PhonePe, Paytm & more</p>
+                        </div>
+                    </div>
+                    <button onclick="selectPaymentMethod('upi')" 
+                            class="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition">
+                        Pay Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Section (Hidden by default) -->
+        <div id="qrSection" class="hidden">
+            <div class="border-t pt-6">
+                <h4 class="text-center font-semibold text-gray-800 mb-4">Scan QR Code to Pay</h4>
+                
+                <!-- QR Code -->
+                <div class="text-center mb-4">
+                    <div class="bg-gray-100 inline-block p-4 rounded-xl">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ upi_link }}"
+                             alt="UPI QR Code"
+                             class="rounded-xl shadow-lg">
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">Amount: ₹{{ order.total }}</p>
+                </div>
+
+                <!-- UPI Apps -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <button onclick="openUPIApp('gpay')" 
+                            class="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">G</span>
+                        </div>
+                        <span class="text-sm">Google Pay</span>
+                    </button>
+                    
+                    <button onclick="openUPIApp('phonepe')" 
+                            class="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">P</span>
+                        </div>
+                        <span class="text-sm">PhonePe</span>
+                    </button>
+                    
+                    <button onclick="openUPIApp('paytm')" 
+                            class="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">P</span>
+                        </div>
+                        <span class="text-sm">Paytm</span>
+                    </button>
+                    
+                    <button onclick="copyUPI()" 
+                            class="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50 transition">
+                        <div class="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">📋</span>
+                        </div>
+                        <span class="text-sm">Copy UPI</span>
+                    </button>
+                </div>
+
+                <!-- UPI ID Display -->
+                <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                        <p class="font-mono text-sm">{{ upi_id }}</p>
+                        <p class="text-xs text-gray-500">Vijeta Cafe</p>
+                    </div>
+                    <button onclick="copyUPI()" class="text-amber-600 text-sm font-medium">
+                        Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Processing Section (Hidden by default) -->
+        <div id="processingSection" class="hidden">
+            <div class="text-center py-8">
+                <div class="relative inline-flex items-center justify-center mb-4">
+                    <div class="w-16 h-16 border-4 border-amber-200 rounded-full animate-spin border-t-amber-600"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-amber-600 text-xl">₹</span>
+                    </div>
+                </div>
+                
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Processing Payment</h3>
+                <p class="text-gray-600 text-sm mb-4">
+                    Please wait while we verify your payment...
+                </p>
+                
+                <!-- Progress Steps -->
+                <div class="flex items-center justify-center mb-6">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div class="w-8 h-0.5 bg-green-500"></div>
+                        <div class="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
+                        <div class="w-8 h-0.5 bg-gray-300"></div>
+                        <div class="w-3 h-3 bg-gray-300 rounded-full"></div>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500">Do not close this window</p>
+            </div>
+        </div>
+
+        <!-- Payment Success Section (Hidden by default) -->
+        <div id="successSection" class="hidden">
+            <div class="text-center py-8">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
+                <p class="text-gray-600 mb-4">Your payment has been verified and confirmed.</p>
+                
+                <div class="bg-green-50 rounded-lg p-4 mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Transaction ID:</span>
+                        <span class="font-mono text-sm">{{ transaction.transaction_id[:12] }}...</span>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm text-gray-600">Order ID:</span>
+                        <span class="font-mono text-sm">{{ order.order_code }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Amount Paid:</span>
+                        <span class="font-semibold">₹{{ order.total }}</span>
+                    </div>
+                </div>
+                
+                <button onclick="goToSuccess()" 
+                        class="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition">
+                    View Order Details
+                </button>
+            </div>
+        </div>
+
+        <!-- Payment Failed Section (Hidden by default) -->
+        <div id="failedSection" class="hidden">
+            <div class="text-center py-8">
+                <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Payment Failed</h3>
+                <p class="text-gray-600 mb-4">We couldn't process your payment. Please try again.</p>
+                
+                <div class="space-y-3">
+                    <button onclick="retryPayment()" 
+                            class="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition">
+                        Try Again
+                    </button>
+                    <button onclick="cancelPayment()" 
+                            class="w-full bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Info -->
+        <div class="mt-6 pt-6 border-t">
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Secured by 256-bit SSL encryption</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+                </svg>
+                <span>Transaction monitored for fraud protection</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Back Button -->
+    <div class="text-center mt-6">
+        <button onclick="goBack()" class="text-gray-500 hover:text-amber-600 text-sm">
+            ← Back to Cart
+        </button>
+    </div>
+
+</div>
+
+<!-- Hidden Form for Payment Submission -->
+<form id="paymentForm" method="POST" action="/payment/verify" style="display: none;">
+    <input type="hidden" name="order_id" id="gateway_order_id">
+    <input type="hidden" name="payment_id" id="gateway_payment_id">
+    <input type="hidden" name="signature" id="gateway_signature">
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Payment state
+let paymentState = 'initiated';
+let checkInterval;
+let transactionId = '{{ transaction.transaction_id }}';
+let securityToken = '{{ transaction.security_token }}';
+let gatewayOrderId = '{{ gateway_order.id }}';
+let gatewayKey = '{{ gateway_key }}';
+
+// Initialize Razorpay (simulated)
+function initializeRazorpay() {
+    // In production, initialize actual Razorpay SDK
+    console.log('Payment gateway initialized');
+}
+
+// Select payment method
+function selectPaymentMethod(method) {
+    if (method === 'upi') {
+        showQRSection();
+    }
+}
+
+// Show QR section
+function showQRSection() {
+    document.getElementById('qrSection').classList.remove('hidden');
+    
+    // Start payment monitoring
+    startPaymentMonitoring();
+}
+
+// Open UPI app
+function openUPIApp(app) {
+    const upiLink = '{{ upi_link }}';
+    let appUrl = '';
+    
+    switch(app) {
+        case 'gpay':
+            appUrl = `tez://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'phonepe':
+            appUrl = `phonepe://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'paytm':
+            appUrl = `paytmmp://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+    }
+    
+    if (appUrl) {
+        window.location.href = appUrl;
+        
+        // Show processing after app opens
+        setTimeout(() => {
+            showProcessingSection();
+        }, 2000);
+    }
+}
+
+// Copy UPI ID
+function copyUPI() {
+    navigator.clipboard.writeText('{{ upi_id }}');
+    showToast('UPI ID copied to clipboard');
+}
+
+// Show processing section
+function showProcessingSection() {
+    document.getElementById('qrSection').classList.add('hidden');
+    document.getElementById('processingSection').classList.remove('hidden');
+    paymentState = 'processing';
+}
+
+// Show success section
+function showSuccessSection() {
+    document.getElementById('processingSection').classList.add('hidden');
+    document.getElementById('successSection').classList.remove('hidden');
+    paymentState = 'success';
+    clearInterval(checkInterval);
+}
+
+// Show failed section
+function showFailedSection() {
+    document.getElementById('processingSection').classList.add('hidden');
+    document.getElementById('failedSection').classList.remove('hidden');
+    paymentState = 'failed';
+    clearInterval(checkInterval);
+}
+
+// Start payment monitoring
+function startPaymentMonitoring() {
+    // Simulate payment completion after 8-12 seconds
+    const delay = 8000 + Math.random() * 4000;
+    
+    setTimeout(() => {
+        // Simulate payment verification
+        simulatePaymentVerification();
+    }, delay);
+}
+
+// Simulate payment verification
+function simulatePaymentVerification() {
+    showProcessingSection();
+    
+    // Generate mock payment data
+    const mockPaymentId = 'pay_' + Math.random().toString(36).substr(2, 9);
+    const mockSignature = btoa(gatewayOrderId + '|' + mockPaymentId);
+    
+    // Fill form and submit
+    document.getElementById('gateway_order_id').value = gatewayOrderId;
+    document.getElementById('gateway_payment_id').value = mockPaymentId;
+    document.getElementById('gateway_signature').value = mockSignature;
+    
+    // Submit payment verification
+    submitPaymentVerification();
+}
+
+// Submit payment verification
+async function submitPaymentVerification() {
+    try {
+        const formData = new FormData(document.getElementById('paymentForm'));
+        const response = await fetch('/payment/verify', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccessSection();
+        } else {
+            showFailedSection();
+            showToast(result.error || 'Payment verification failed');
+        }
+    } catch (error) {
+        console.error('Payment verification error:', error);
+        showFailedSection();
+        showToast('Payment verification failed. Please try again.');
+    }
+}
+
+// Retry payment
+function retryPayment() {
+    location.reload();
+}
+
+// Cancel payment
+function cancelPayment() {
+    if (confirm('Are you sure you want to cancel this payment?')) {
+        window.location.href = '/';
+    }
+}
+
+// Go to success page
+function goToSuccess() {
+    window.location.href = '/order/success';
+}
+
+// Go back
+function goBack() {
+    window.location.href = '/cart';
+}
+
+// Show toast message
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg z-50';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeRazorpay();
+});
+</script>
+{% endblock %}

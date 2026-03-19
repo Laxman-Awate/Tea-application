@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment System Test Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">🧪 Payment System Test Interface</h1>
+        
+        <!-- Test Status -->
+        <div class="bg-white rounded-lg p-6 mb-6 shadow">
+            <h2 class="text-xl font-semibold mb-4">Test Status</h2>
+            <div id="testStatus" class="text-gray-600">
+                Ready to test payment system...
+            </div>
+        </div>
+
+        <!-- Quick Test Flow -->
+        <div class="bg-white rounded-lg p-6 mb-6 shadow">
+            <h2 class="text-xl font-semibold mb-4">🚀 Quick Test Flow</h2>
+            <div class="space-y-4">
+                <button onclick="startTestFlow()" 
+                        class="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition">
+                    Start Complete Test Flow
+                </button>
+                <div id="testSteps" class="text-sm text-gray-600 space-y-2">
+                    <div>1. 🛒 Add items to cart</div>
+                    <div>2. 📝 Fill customer details</div>
+                    <div>3. 💳 Initiate payment</div>
+                    <div>4. ✅ Simulate payment success</div>
+                    <div>5. 🎯 Verify success page access</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Testing -->
+        <div class="bg-white rounded-lg p-6 mb-6 shadow">
+            <h2 class="text-xl font-semibold mb-4">🔧 Manual Testing</h2>
+            
+            <!-- Get Local IP -->
+            <div class="mb-4">
+                <button onclick="getLocalIP()" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Get Local IP for Mobile Testing
+                </button>
+                <div id="localIP" class="mt-2 text-sm text-gray-600"></div>
+            </div>
+
+            <!-- Recent Transactions -->
+            <div class="mb-4">
+                <button onclick="loadTransactions()" 
+                        class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                    Load Recent Transactions
+                </button>
+                <div id="transactions" class="mt-2 space-y-2"></div>
+            </div>
+
+            <!-- Test Actions -->
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="testPaymentSuccess()" 
+                        class="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                    Test Payment Success
+                </button>
+                <button onclick="testPaymentFailure()" 
+                        class="bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition">
+                    Test Payment Failure
+                </button>
+                <button onclick="testSecurityBypass()" 
+                        class="bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition">
+                    Test Security Bypass
+                </button>
+                <button onclick="testRateLimit()" 
+                        class="bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition">
+                    Test Rate Limit
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="bg-white rounded-lg p-6 shadow">
+            <h2 class="text-xl font-semibold mb-4">📊 Test Results</h2>
+            <div id="testResults" class="space-y-2 text-sm font-mono"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentTransactionId = null;
+
+        function log(message, type = 'info') {
+            const testResults = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'success' ? 'text-green-600' : 
+                              type === 'error' ? 'text-red-600' : 
+                              type === 'warning' ? 'text-yellow-600' : 'text-gray-600';
+            
+            testResults.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            testResults.scrollTop = testResults.scrollHeight;
+        }
+
+        function updateStatus(message) {
+            document.getElementById('testStatus').innerHTML = `<span class="text-blue-600">${message}</span>`;
+        }
+
+        async function getLocalIP() {
+            try {
+                // This is a simplified way - in reality you'd get it from your network
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                const publicIP = data.ip;
+                
+                document.getElementById('localIP').innerHTML = 
+                    `<div class="bg-blue-50 p-3 rounded">
+                        <strong>Public IP:</strong> ${publicIP}<br>
+                        <strong>Local IP:</strong> Check with <code>ipconfig</code> (Windows) or <code>ifconfig</code> (Mac/Linux)<br>
+                        <strong>Mobile URL:</strong> http://YOUR_LOCAL_IP:5000
+                    </div>`;
+                
+                log('IP information loaded', 'success');
+            } catch (error) {
+                log('Failed to get IP: ' + error.message, 'error');
+            }
+        }
+
+        async function loadTransactions() {
+            try {
+                updateStatus('Loading transactions...');
+                const response = await fetch('/test/payment_status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const transactionsDiv = document.getElementById('transactions');
+                    transactionsDiv.innerHTML = '<div class="space-y-2">';
+                    
+                    data.transactions.forEach(transaction => {
+                        const statusColor = transaction.status === 'SUCCESS' ? 'text-green-600' : 
+                                         transaction.status === 'FAILED' ? 'text-red-600' : 
+                                         'text-yellow-600';
+                        
+                        transactionsDiv.innerHTML += `
+                            <div class="border p-3 rounded">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <strong>${transaction.transaction_id.substring(0, 12)}...</strong>
+                                        <span class="${statusColor} ml-2">${transaction.status}</span>
+                                        ${transaction.test_mode ? '<span class="text-xs bg-gray-200 px-2 py-1 rounded">TEST</span>' : ''}
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        ₹${transaction.amount}
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    ${new Date(transaction.created_at).toLocaleString()}
+                                </div>
+                                <div class="mt-2 space-x-2">
+                                    <button onclick="simulatePayment('${transaction.transaction_id}')" 
+                                            class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                                        Simulate Success
+                                    </button>
+                                    <button onclick="failPayment('${transaction.transaction_id}')" 
+                                            class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                                        Simulate Failure
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    transactionsDiv.innerHTML += '</div>';
+                    log(`Loaded ${data.transactions.length} transactions`, 'success');
+                } else {
+                    log('Failed to load transactions: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('Error loading transactions: ' + error.message, 'error');
+            }
+            
+            updateStatus('Ready');
+        }
+
+        async function simulatePayment(transactionId) {
+            try {
+                updateStatus('Simulating payment...');
+                const response = await fetch(`/test/simulate_payment/${transactionId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ Payment simulated: ${data.payment_id}`, 'success');
+                    currentTransactionId = transactionId;
+                    setTimeout(() => {
+                        window.open('/order/success', '_blank');
+                    }, 1000);
+                } else {
+                    log('❌ Payment simulation failed: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('Error simulating payment: ' + error.message, 'error');
+            }
+            updateStatus('Ready');
+        }
+
+        async function failPayment(transactionId) {
+            try {
+                updateStatus('Simulating payment failure...');
+                const response = await fetch(`/test/fail_payment/${transactionId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`❌ Payment failure simulated: ${transactionId}`, 'warning');
+                } else {
+                    log('Failed to simulate payment failure: ' + data.error, 'error');
+                }
+            } catch (error) {
+                log('Error simulating failure: ' + error.message, 'error');
+            }
+            updateStatus('Ready');
+        }
+
+        async function startTestFlow() {
+            log('🚀 Starting complete test flow...', 'info');
+            
+            // Step 1: Open main app
+            log('Step 1: Opening main application...', 'info');
+            window.open('/', '_blank');
+            
+            // Wait a bit then continue
+            setTimeout(() => {
+                log('Step 2: Please add items to cart and proceed to payment', 'info');
+                log('Step 3: Use test endpoints below to simulate payment', 'info');
+            }, 2000);
+        }
+
+        async function testPaymentSuccess() {
+            await loadTransactions();
+            if (currentTransactionId) {
+                await simulatePayment(currentTransactionId);
+            } else {
+                log('No transaction available. Load transactions first.', 'warning');
+            }
+        }
+
+        async function testPaymentFailure() {
+            await loadTransactions();
+            if (currentTransactionId) {
+                await failPayment(currentTransactionId);
+            } else {
+                log('No transaction available. Load transactions first.', 'warning');
+            }
+        }
+
+        async function testSecurityBypass() {
+            log('🔒 Testing security bypass...', 'info');
+            
+            // Try to access success page without payment
+            try {
+                const response = await fetch('/order/success');
+                if (response.status === 403) {
+                    log('✅ Security bypass prevented - 403 Forbidden', 'success');
+                } else {
+                    log('⚠️ Security bypass test failed - should return 403', 'warning');
+                }
+            } catch (error) {
+                log('Error testing security bypass: ' + error.message, 'error');
+            }
+        }
+
+        async function testRateLimit() {
+            log('⏱️ Testing rate limiting...', 'info');
+            
+            // Send multiple rapid requests
+            for (let i = 0; i < 6; i++) {
+                try {
+                    const response = await fetch('/test/payment_status');
+                    log(`Request ${i + 1}: ${response.status}`, 'info');
+                } catch (error) {
+                    log(`Request ${i + 1} failed: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Test interface ready', 'success');
+            updateStatus('Ready to test');
+        });
+    </script>
+</body>
+</html>
