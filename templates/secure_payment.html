@@ -294,12 +294,14 @@ function openUPIApp(app) {
     }
     
     if (appUrl) {
-        window.location.href = appUrl;
+        // Open payment status monitor in new tab
+        const statusUrl = `/payment_status?order_id=${orderId}&amount=${order.total}&order_code=${order.order_code}&transaction_id=${transactionId}`;
+        window.open(statusUrl, '_blank');
         
-        // Show processing after app opens
+        // Open UPI app
         setTimeout(() => {
-            showProcessingSection();
-        }, 2000);
+            window.location.href = appUrl;
+        }, 1000);
     }
 }
 

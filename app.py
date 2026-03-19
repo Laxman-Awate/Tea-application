@@ -438,6 +438,24 @@ def order_success():
     )
 
 
+# ------------------ PAYMENT STATUS MONITOR ------------------
+@app.route("/payment_status")
+def payment_status_monitor():
+    """Payment status monitoring page"""
+    order_id = request.args.get('order_id')
+    amount = request.args.get('amount')
+    order_code = request.args.get('order_code')
+    transaction_id = request.args.get('transaction_id')
+    
+    if not all([order_id, amount, order_code]):
+        return redirect(url_for("index"))
+    
+    return render_template("payment_status.html",
+                         order_id=order_id,
+                         amount=amount,
+                         order_code=order_code,
+                         transaction_id=transaction_id)
+
 # ------------------ PAYMENT ------------------
 @app.route("/payment")
 @validate_payment_session
@@ -496,8 +514,8 @@ def payment():
             return redirect(url_for("index"))
 
         # UPI payment details
-        upi_id = "q391330410@ybl"
-        payee_name = "Vijeta Cafe"
+        upi_id = os.environ.get("UPI_ID", "9606437915-3@ybl")  # Set in .env file
+        payee_name = os.environ.get("PAYEE_NAME", "Laxman")
         amount = data["total"]
         order_code = data["order_code"]
 

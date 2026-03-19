@@ -35,6 +35,7 @@
             <p class="text-sm font-medium text-gray-700 mb-3 text-center">Or tap to pay directly:</p>
             <div class="grid grid-cols-2 gap-3">
                 <a href="{{ gpay_link }}" 
+                   onclick="openUPIAppWithStatus('gpay')"
                    class="flex flex-col items-center p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
                     <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mb-1">
                         <span class="text-white font-bold text-sm">G</span>
@@ -43,7 +44,7 @@
                 </a>
                 
                 <a href="{{ phonepe_link }}" 
-                   onclick="handlePhonePeClick(event)"
+                   onclick="openUPIAppWithStatus('phonepe')"
                    class="flex flex-col items-center p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
                     <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center mb-1">
                         <span class="text-white font-bold text-sm">P</span>
@@ -52,6 +53,7 @@
                 </a>
                 
                 <a href="{{ paytm_link }}" 
+                   onclick="openUPIAppWithStatus('paytm')"
                    class="flex flex-col items-center p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">
                     <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center mb-1">
                         <span class="text-white font-bold text-sm">P</span>
@@ -60,6 +62,7 @@
                 </a>
                 
                 <a href="{{ upi_link }}" 
+                   onclick="openUPIAppWithStatus('upi')"
                    class="flex flex-col items-center p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
                     <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mb-1">
                         <span class="text-white font-bold text-sm">₹</span>
@@ -347,6 +350,38 @@ function goToHome() {
     } else {
         // Fallback: direct redirect
         window.location.href = "{{ url_for('index') }}";
+    }
+}
+
+// Open UPI app with status monitor
+function openUPIAppWithStatus(app) {
+    const upiLink = '{{ upi_link }}';
+    let appUrl = '';
+    
+    switch(app) {
+        case 'gpay':
+            appUrl = `tez://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'phonepe':
+            appUrl = `phonepe://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'paytm':
+            appUrl = `paytmmp://upi/pay?${upiLink.split('?')[1]}`;
+            break;
+        case 'upi':
+            appUrl = upiLink;
+            break;
+    }
+    
+    if (appUrl) {
+        // Open payment status monitor in new tab
+        const statusUrl = `/payment_status?order_id={{ order.order_id }}&amount={{ order.total }}&order_code={{ order.order_code }}`;
+        window.open(statusUrl, '_blank');
+        
+        // Open UPI app
+        setTimeout(() => {
+            window.location.href = appUrl;
+        }, 1000);
     }
 }
 
