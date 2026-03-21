@@ -6,6 +6,7 @@ from flask import (
 from datetime import datetime, timezone
 import os
 import uuid
+import urllib.parse
 from dotenv import load_dotenv
 import json
 
@@ -470,25 +471,25 @@ def payment():
         print("⚠️ Using simple payment template")
         
         # Generate UPI links for simple payment
-        upi_id = os.environ.get("UPI_ID", "9606437915-3@ybl")
-        payee_name = os.environ.get("PAYEE_NAME", "Laxman")
+        upi_id = os.environ.get("UPI_ID", "q391330410@ybl")
+        payee_name = os.environ.get("PAYEE_NAME", "Vijeta Cafe")
         amount = data["total"]
         order_code = data["order_code"]
         
-        # UPI payment link
+        # UPI payment link with proper encoding
         upi_link = (
             f"upi://pay?"
-            f"pa={upi_id}&"
-            f"pn={payee_name}&"
+            f"pa={urllib.parse.quote(upi_id)}&"
+            f"pn={urllib.parse.quote(payee_name)}&"
             f"am={amount}&"
             f"cu=INR&"
-            f"tn=Order%20{order_code}"
+            f"tn={urllib.parse.quote(f'Order {order_code}')}"
         )
         
         # UPI app specific links
-        gpay_link = f"tez://upi/pay?pa={upi_id}&pn={payee_name}&am={amount}&cu=INR&tn=Order%20{order_code}"
-        phonepe_link = f"phonepe://upi/pay?pa={upi_id}&pn={payee_name}&am={amount}&cu=INR&tn=Order%20{order_code}"
-        paytm_link = f"paytmmp://upi/pay?pa={upi_id}&pn={payee_name}&am={amount}&cu=INR&tn=Order%20{order_code}"
+        gpay_link = f"tez://upi/pay?pa={urllib.parse.quote(upi_id)}&pn={urllib.parse.quote(payee_name)}&am={amount}&cu=INR&tn={urllib.parse.quote(f'Order {order_code}')}"
+        phonepe_link = f"phonepe://upi/pay?pa={urllib.parse.quote(upi_id)}&pn={urllib.parse.quote(payee_name)}&am={amount}&cu=INR&tn={urllib.parse.quote(f'Order {order_code}')}"
+        paytm_link = f"paytmmp://upi/pay?pa={urllib.parse.quote(upi_id)}&pn={urllib.parse.quote(payee_name)}&am={amount}&cu=INR&tn={urllib.parse.quote(f'Order {order_code}')}"
         
         return render_template("payment.html", 
                            order=data,
@@ -542,19 +543,19 @@ def payment():
             return redirect(url_for("index"))
 
         # UPI payment details
-        upi_id = os.environ.get("UPI_ID", "9606437915-3@ybl")  # Set in .env file
-        payee_name = os.environ.get("PAYEE_NAME", "Laxman")
+        upi_id = os.environ.get("UPI_ID", "q391330410@ybl")
+        payee_name = os.environ.get("PAYEE_NAME", "Vijeta Cafe")
         amount = data["total"]
         order_code = data["order_code"]
 
-        # UPI payment link
+        # UPI payment link with proper encoding
         upi_link = (
             f"upi://pay?"
-            f"pa={upi_id}&"
-            f"pn={payee_name}&"
+            f"pa={urllib.parse.quote(upi_id)}&"
+            f"pn={urllib.parse.quote(payee_name)}&"
             f"am={amount}&"
             f"cu=INR&"
-            f"tn=Order%20{order_code}"
+            f"tn={urllib.parse.quote(f'Order {order_code}')}"
         )
 
         return render_template(
