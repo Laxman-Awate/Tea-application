@@ -1,6 +1,7 @@
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore, messaging
+from datetime import timezone
 
 _db = None
 
@@ -55,10 +56,31 @@ def get_db():
     return _db
 
 
-# ---------------- MENU (DISABLED TEMPORARILY) ----------------
+# ---------------- MENU ----------------
 def get_menu():
-    print("⚠️ get_menu disabled (safe mode)")
-    return []
+    try:
+        print("🔥 Attempting to get menu from Firebase...")
+        db = get_db()
+        
+        if not db:
+            print("❌ Firebase DB not available for menu")
+            return []
+
+        # Get menu items from Firestore
+        docs = db.collection("menu").get()
+        menu_items = []
+        
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            menu_items.append(item)
+        
+        print(f"✅ Retrieved {len(menu_items)} menu items from Firebase")
+        return menu_items
+
+    except Exception as e:
+        print(f"❌ get_menu failed: {e}")
+        return []
 
 
 # ---------------- ORDERS ----------------
@@ -68,13 +90,15 @@ def save_order(order_data):
         db = get_db()
         
         if not db:
-            print("❌ Firebase DB not available")
+            print("❌ Firebase DB not available - using local fallback")
             print("🔍 Environment variables:", {
                 "VERCEL": os.getenv("VERCEL"),
                 "FIREBASE_SERVICE_ACCOUNT": "SET" if os.getenv("FIREBASE_SERVICE_ACCOUNT") else "NOT SET",
                 "FIREBASE_CREDENTIALS": os.getenv("FIREBASE_CREDENTIALS")
             })
-            return None
+            
+            # Fallback: Save to local file for development
+            return save_order_local_fallback(order_data)
 
         print("✅ Firebase DB available, saving order...")
         ref = db.collection("orders").document()
@@ -88,6 +112,40 @@ def save_order(order_data):
         print(f"❌ Error type: {type(e).__name__}")
         import traceback
         print(f"❌ Full traceback: {traceback.format_exc()}")
+        
+        # Fallback to local storage
+        print("🔄 Using local fallback storage")
+        return save_order_local_fallback(order_data)
+
+
+def save_order_local_fallback(order_data):
+    """Fallback to save orders locally when Firebase is not available"""
+    try:
+        import json
+        from datetime import datetime
+        
+        # Create local orders directory if it doesn't exist
+        os.makedirs("local_orders", exist_ok=True)
+        
+        # Generate local order ID
+        import uuid
+        local_order_id = f"local_{uuid.uuid4().hex[:8]}"
+        
+        # Add local metadata
+        order_data["localOrderId"] = local_order_id
+        order_data["savedLocally"] = True
+        order_data["savedAt"] = datetime.now(timezone.utc).isoformat()
+        
+        # Save to local file
+        filename = f"local_orders/order_{local_order_id}.json"
+        with open(filename, 'w') as f:
+            json.dump(order_data, f, indent=2, default=str)
+        
+        print(f"✅ Order saved locally: {filename}")
+        return local_order_id
+        
+    except Exception as e:
+        print(f"❌ Local fallback also failed: {e}")
         return None
 
 
