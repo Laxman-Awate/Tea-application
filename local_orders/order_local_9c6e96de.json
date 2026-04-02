@@ -1,0 +1,20 @@
+{
+  "orderId": "3F83484D",
+  "customerName": "Prajwal",
+  "customerEmail": "",
+  "items": [
+    {
+      "name": "Biscuit",
+      "price": 5,
+      "quantity": 1,
+      "total": 5
+    }
+  ],
+  "totalAmount": 5,
+  "orderStatus": "PENDING_PAYMENT",
+  "paymentStatus": "PENDING",
+  "createdAt": "2026-04-02 15:02:18.943784+00:00",
+  "localOrderId": "local_9c6e96de",
+  "savedLocally": true,
+  "savedAt": "2026-04-02T15:02:18.952310+00:00"
+}

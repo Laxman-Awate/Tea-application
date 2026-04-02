@@ -1,0 +1,20 @@
+{
+  "orderId": "B221D940",
+  "customerName": "Prajwal",
+  "customerEmail": "",
+  "items": [
+    {
+      "name": "Masala Tea",
+      "price": 10,
+      "quantity": 1,
+      "total": 10
+    }
+  ],
+  "totalAmount": 10,
+  "orderStatus": "PENDING_PAYMENT",
+  "paymentStatus": "PENDING",
+  "createdAt": "2026-04-02 14:52:47.010686+00:00",
+  "localOrderId": "local_0d8af927",
+  "savedLocally": true,
+  "savedAt": "2026-04-02T14:52:47.018623+00:00"
+}

@@ -58,29 +58,9 @@ def get_db():
 
 # ---------------- MENU ----------------
 def get_menu():
-    try:
-        print("🔥 Attempting to get menu from Firebase...")
-        db = get_db()
-        
-        if not db:
-            print("❌ Firebase DB not available for menu")
-            return []
-
-        # Get menu items from Firestore
-        docs = db.collection("menu").get()
-        menu_items = []
-        
-        for doc in docs:
-            item = doc.to_dict()
-            item["id"] = doc.id
-            menu_items.append(item)
-        
-        print(f"✅ Retrieved {len(menu_items)} menu items from Firebase")
-        return menu_items
-
-    except Exception as e:
-        print(f"❌ get_menu failed: {e}")
-        return []
+    # For now, use SAMPLE_MENU directly to avoid Firebase issues
+    print("🔥 Using SAMPLE_MENU (Firebase disabled)")
+    return []
 
 
 # ---------------- ORDERS ----------------
@@ -151,27 +131,79 @@ def save_order_local_fallback(order_data):
 
 def get_all_orders():
     try:
+        # Try Firebase first
         db = get_db()
-        if not db:
-            return []
+        if db:
+            docs = (
+                db.collection("orders")
+                .order_by("createdAt", direction=firestore.Query.DESCENDING)
+                .limit(100)
+                .get()
+            )
 
-        docs = (
-            db.collection("orders")
-            .order_by("createdAt", direction=firestore.Query.DESCENDING)
-            .limit(100)
-            .get()
-        )
+            orders = []
+            for doc in docs:
+                data = doc.to_dict()
+                data["id"] = doc.id
+                orders.append(data)
 
-        orders = []
-        for doc in docs:
-            data = doc.to_dict()
-            data["id"] = doc.id
-            orders.append(data)
-
-        return orders
-
+            print(f"✅ Retrieved {len(orders)} orders from Firebase")
+            return orders
+        else:
+            print("🔄 Firebase not available, using local orders")
+            
     except Exception as e:
-        print(f"❌ get_all_orders failed: {e}")
+        print(f"❌ Firebase get_all_orders failed: {e}")
+        print("🔄 Using local orders fallback")
+    
+    # Fallback to local files
+    return get_all_orders_local_fallback()
+
+
+def get_all_orders_local_fallback():
+    """Read orders from local files when Firebase is not available"""
+    try:
+        import json
+        import os
+        from datetime import datetime
+        
+        orders = []
+        local_orders_dir = "local_orders"
+        
+        if not os.path.exists(local_orders_dir):
+            print("📁 No local orders directory found")
+            return []
+        
+        # Read all JSON files in local_orders directory
+        for filename in os.listdir(local_orders_dir):
+            if filename.endswith('.json'):
+                try:
+                    filepath = os.path.join(local_orders_dir, filename)
+                    with open(filepath, 'r') as f:
+                        order_data = json.load(f)
+                        
+                    # Ensure the order has proper structure
+                    if 'orderId' in order_data or 'localOrderId' in order_data:
+                        # Convert local timestamp back to datetime for consistency
+                        if 'savedAt' in order_data:
+                            try:
+                                order_data['createdAt'] = datetime.fromisoformat(order_data['savedAt'])
+                            except:
+                                pass
+                        
+                        orders.append(order_data)
+                        
+                except Exception as e:
+                    print(f"❌ Error reading {filename}: {e}")
+        
+        # Sort by creation time (newest first)
+        orders.sort(key=lambda x: x.get('savedAt', ''), reverse=True)
+        
+        print(f"✅ Retrieved {len(orders)} orders from local files")
+        return orders
+        
+    except Exception as e:
+        print(f"❌ Local orders fallback failed: {e}")
         return []
 
 

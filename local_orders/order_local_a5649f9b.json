@@ -1,0 +1,20 @@
+{
+  "orderId": "B8BCAED0",
+  "customerName": "Laxman",
+  "customerEmail": "",
+  "items": [
+    {
+      "name": "Lemon Tea",
+      "price": 15,
+      "quantity": 1,
+      "total": 15
+    }
+  ],
+  "totalAmount": 15,
+  "orderStatus": "PENDING_PAYMENT",
+  "paymentStatus": "PENDING",
+  "createdAt": "2026-04-02 14:58:21.881549+00:00",
+  "localOrderId": "local_a5649f9b",
+  "savedLocally": true,
+  "savedAt": "2026-04-02T14:58:21.886179+00:00"
+}

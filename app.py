@@ -263,10 +263,20 @@ def view_cart():
     cart_items = []
     total = 0
 
-    menu_lookup = {i["id"]: i for i in SAMPLE_MENU}
+    try:
+        # Get the same menu as the main page
+        menu_items = get_menu()
+        if not menu_items:
+            raise Exception("Empty menu from Firestore")
+    except Exception as e:
+        print("❌ get_menu failed in cart, using SAMPLE_MENU:", e)
+        menu_items = SAMPLE_MENU
+
+    menu_lookup = {i["id"]: i for i in menu_items}
 
     for item_id, qty in cart.items():
         if item_id not in menu_lookup:
+            print(f"⚠️ Item {item_id} not found in menu lookup")
             continue
 
         item = menu_lookup[item_id]
@@ -281,6 +291,7 @@ def view_cart():
             "total": item_total
         })
 
+    print(f"🛒 Cart items: {len(cart_items)}, Total: {total}")
     return render_template("cart.html", cart_items=cart_items, total=total)
 
 @app.route("/update_cart", methods=["POST"])
@@ -332,9 +343,19 @@ def create_order_route():
     items = []
     total = 0
 
+    try:
+        # Get the same menu as the main page
+        menu_items = get_menu()
+        if not menu_items:
+            raise Exception("Empty menu from Firestore")
+    except Exception as e:
+        print("❌ get_menu failed in order, using SAMPLE_MENU:", e)
+        menu_items = SAMPLE_MENU
+
     for item_id, qty in cart.items():
-        item = next((i for i in SAMPLE_MENU if i["id"] == item_id), None)
+        item = next((i for i in menu_items if i["id"] == item_id), None)
         if not item:
+            print(f"⚠️ Item {item_id} not found in menu for order")
             continue
 
         item_total = item["price"] * qty
@@ -952,15 +973,31 @@ def admin_live_orders():
         
         for order in orders:
             if order.get("createdAt"):
-                # Handle Firebase timestamp
+                # Handle different timestamp formats
+                order_date = None
+                
                 if hasattr(order["createdAt"], "seconds"):
+                    # Firebase timestamp
                     order_date = datetime.fromtimestamp(order["createdAt"].seconds).date().isoformat()
-                else:
-                    order_date = datetime.fromisoformat(str(order["createdAt"]).split("T")[0]).date().isoformat()
+                elif isinstance(order["createdAt"], str):
+                    # ISO string from local files
+                    try:
+                        order_date = datetime.fromisoformat(order["createdAt"]).date().isoformat()
+                    except:
+                        # Try parsing from local files with savedAt
+                        if "savedAt" in order:
+                            try:
+                                order_date = datetime.fromisoformat(order["savedAt"]).date().isoformat()
+                            except:
+                                continue
+                elif isinstance(order["createdAt"], datetime):
+                    # Direct datetime object
+                    order_date = order["createdAt"].date().isoformat()
                 
                 if order_date == today:
                     today_orders.append(order)
         
+        print(f"📊 Today's orders: {len(today_orders)}")
         return jsonify(today_orders)
 
     except Exception as e:

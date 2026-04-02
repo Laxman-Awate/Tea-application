@@ -1,0 +1,20 @@
+{
+  "orderId": "531C5B76",
+  "customerName": "Anuragh",
+  "customerEmail": "",
+  "items": [
+    {
+      "name": "Biscuit",
+      "price": 5,
+      "quantity": 1,
+      "total": 5
+    }
+  ],
+  "totalAmount": 5,
+  "orderStatus": "PENDING_PAYMENT",
+  "paymentStatus": "PENDING",
+  "createdAt": "2026-04-02 15:05:57.080456+00:00",
+  "localOrderId": "local_41245dd4",
+  "savedLocally": true,
+  "savedAt": "2026-04-02T15:05:57.085213+00:00"
+}
